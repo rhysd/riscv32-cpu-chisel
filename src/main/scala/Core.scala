@@ -61,10 +61,12 @@ class Core extends Module {
   val rs1_data = Mux(rs1_addr =/= 0.U(WORD_LEN.U), regfile(rs1_addr), 0.U(WORD_LEN.W))
   val rs2_data = Mux(rs2_addr =/= 0.U(WORD_LEN.U), regfile(rs2_addr), 0.U(WORD_LEN.W))
 
-  val imm_i = inst(31, 20)
   // Spec 2.6: The effective address is obtained by adding register rs1 to the sign-extended 12-bit offset.
   // sext 12bit value to 32bit value.
+  val imm_i = inst(31, 20) // imm for I-type
   val imm_i_sext = Cat(Fill(20, imm_i(11)), imm_i)
+  val imm_s = Cat(inst(31, 25), inst(11, 7)) // imm for S-type
+  val imm_s_sext = Cat(Fill(20, imm_s(11)), imm_s)
 
   /*
    * Execute (EX)
@@ -75,33 +77,42 @@ class Core extends Module {
     // Calculate the address to load by adding immediate.
     // This may cause integer overflow. In the case, Chisel truncates the value to 32bit value.
     (inst === LW) -> (rs1_data + imm_i_sext),
+    // Store Word: x[rs1] + sext(imm_s)
+    (inst === SW) -> (rs1_data + imm_s_sext),
   ))
 
   /*
    * Memory Access (MEM)
    */
+  // LW: x[rd] = M[x[rs1] + sext(imm_i)]
   io.dmem.addr := alu_out // Always output data to memory regardless of instruction
+
+  // SW: M[x[rs1] + sext(imm_s)] = x[rs2]
+  io.dmem.wen := inst === SW
+  io.dmem.wdata := rs2_data
 
   /*
    * Write Back (WB)
    */
   val wb_data = io.dmem.rdata
   when(inst === LW) {
-    regfile(wb_addr) := wb_data // Store loaded data to register
+    regfile(wb_addr) := wb_data // Store loaded data from memory to register
   }
 
   // For debugging.
-  // `exit` port output is `true` when the instruction is 0x14131211. It means 2nd line in lw.hex.
-  io.exit := (inst === 0x14131211.U(WORD_LEN.W))
+  // `exit` port output is `true` when the instruction is 0x00602823. It means 2nd line in sw.hex.
+  io.exit := inst === 0x00602823.U(WORD_LEN.W)
 
-  printf(p"pc:        0x${Hexadecimal(pc)}\n") // program counter
-  printf(p"inst:      0x${Hexadecimal(inst)}\n") // fetched instruction
-  printf(p"rs1_addr:  $rs1_addr\n") // register1 address
-  printf(p"rs2_addr:  $rs2_addr\n") // register2 address
-  printf(p"wb_addr:   $wb_addr\n") // register address to write data loaded from memory
-  printf(p"rs1_data:  0x${Hexadecimal(rs1_data)}\n") // data at register1
-  printf(p"rs2_data:  0x${Hexadecimal(rs2_data)}\n") // data at register2
-  printf(p"wb_data:   0x${Hexadecimal(wb_data)}\n") // data to write back to register loaded from memory
-  printf(p"dmem.addr: 0x${io.dmem.addr}\n") // memory address loaded by LW
+  printf(p"pc:         0x${Hexadecimal(pc)}\n") // program counter
+  printf(p"inst:       0x${Hexadecimal(inst)}\n") // fetched instruction
+  printf(p"rs1_addr:   $rs1_addr\n") // register1 address
+  printf(p"rs2_addr:   $rs2_addr\n") // register2 address
+  printf(p"wb_addr:    $wb_addr\n") // register address to write data loaded from memory
+  printf(p"rs1_data:   0x${Hexadecimal(rs1_data)}\n") // data at register1
+  printf(p"rs2_data:   0x${Hexadecimal(rs2_data)}\n") // data at register2
+  printf(p"wb_data:    0x${Hexadecimal(wb_data)}\n") // data to write back to register loaded from memory
+  printf(p"dmem.addr:  ${io.dmem.addr}\n") // memory address loaded by LW
+  printf(p"dmem.wen:   ${io.dmem.wen}\n") // boolean signal to know the timing to write data to memory
+  printf(p"dmem.wdata: 0x${Hexadecimal(io.dmem.wdata)}\n") // data written to memory by SW instruction
   printf("-------------\n")
 }

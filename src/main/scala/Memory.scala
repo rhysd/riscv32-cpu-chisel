@@ -16,7 +16,9 @@ class ImemPortIo extends Bundle {
 
 class DmemPortIo extends Bundle {
   val addr = Input(UInt(WORD_LEN.W))
-  val rdata = Output(UInt(WORD_LEN.W))
+  val rdata = Output(UInt(WORD_LEN.W)) // r stands for read
+  val wen = Input(Bool()) // Indicate when data should be written
+  val wdata = Input(UInt(WORD_LEN.W)) // w stands for write
 }
 
 // Group input/output between CPU core and memory (p.92)
@@ -31,7 +33,7 @@ class Memory extends Module {
   // size is 8bits because PC is counted up by 4bytes.
   val mem = Mem(0x4000, UInt(8.W))
 
-  loadMemoryFromFile(mem, "src/hex/lw.hex")
+  loadMemoryFromFile(mem, "src/hex/sw.hex")
 
   io.imem.inst := Cat(
     mem(io.imem.addr + 3.U(WORD_LEN.W)),
@@ -46,4 +48,11 @@ class Memory extends Module {
     mem(io.dmem.addr + 1.U(WORD_LEN.W)),
     mem(io.dmem.addr)
   )
+
+  when(io.dmem.wen) {
+    mem(io.dmem.addr + 3.U(WORD_LEN.W)) := io.dmem.wdata(31, 24)
+    mem(io.dmem.addr + 2.U(WORD_LEN.W)) := io.dmem.wdata(23, 16)
+    mem(io.dmem.addr + 1.U(WORD_LEN.W)) := io.dmem.wdata(15, 8)
+    mem(io.dmem.addr) := io.dmem.wdata(7, 0)
+  }
 }
