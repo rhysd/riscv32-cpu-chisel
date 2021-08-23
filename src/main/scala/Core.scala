@@ -68,65 +68,81 @@ class Core extends Module {
   val imm_s = Cat(inst(31, 25), inst(11, 7)) // imm for S-type
   val imm_s_sext = Cat(Fill(20, imm_s(11)), imm_s)
 
+  // Decode table.
+  // Note: OP1 means 1st operand and OP2 means 2nd operand.
+  // Note: ALU_X means 'no output from ALU'.
+  // Note: MEN_X means 'no memory write'. S at MEN_S stands for Scalar
+  // Note: WB_X means 'no write back data'.
+  val List(exe_fun, op1_sel, op2_sel, mem_wen, rf_wen, wb_sel) = ListLookup(
+    inst,
+    List(ALU_X, OP1_RS1, OP2_RS2, MEN_X, REN_X, WB_X),
+    Array(
+      // x[rs1] + sext(imm_i)
+      LW   -> List(ALU_ADD, OP1_RS1, OP2_IMI, MEN_X , REN_S, WB_MEM),
+      // x[rs1] + sext(imm_s)
+      SW   -> List(ALU_ADD, OP1_RS1, OP2_IMS, MEN_S,  REN_X, WB_X),
+      // // x[rs1] + x[rs2]
+      ADD  -> List(ALU_ADD, OP1_RS1, OP2_RS2, MEN_X , REN_S, WB_ALU),
+      // x[rs1] + sext(imm_i)
+      ADDI -> List(ALU_ADD, OP1_RS1, OP2_IMI, MEN_X , REN_S, WB_ALU),
+      // x[rs1] - x[rs2]
+      SUB  -> List(ALU_SUB, OP1_RS1, OP2_RS2, MEN_X , REN_S, WB_ALU),
+      // x[rs1] & x[rs2]
+      AND  -> List(ALU_AND, OP1_RS1, OP2_RS2, MEN_X , REN_S, WB_ALU),
+      // x[rs1] | x[rs2]
+      OR   -> List(ALU_OR , OP1_RS1, OP2_RS2, MEN_X , REN_S, WB_ALU),
+      // x[rs1] ^ x[rs2]
+      XOR  -> List(ALU_XOR, OP1_RS1, OP2_RS2, MEN_X , REN_S, WB_ALU),
+      // x[rs1] & sext(imm_i)
+      ANDI -> List(ALU_AND, OP1_RS1, OP2_IMI, MEN_X , REN_S, WB_ALU),
+      // x[rs1] | sext(imm_i)
+      ORI  -> List(ALU_OR , OP1_RS1, OP2_IMI, MEN_X , REN_S, WB_ALU),
+      // x[rs1] ^ sext(imm_i)
+      XORI -> List(ALU_XOR, OP1_RS1, OP2_IMI, MEN_X , REN_S, WB_ALU),
+    ),
+  )
+
+  // Determine 1st operand data signal
+  val op1_data = MuxCase(0.U(WORD_LEN.W), Seq(
+    (op1_sel === OP1_RS1) -> rs1_data,
+  ))
+
+  // Determine 2nd operand data signal
+  val op2_data = MuxCase(0.U(WORD_LEN.W), Seq(
+    (op2_sel === OP2_RS2) -> rs2_data,
+    (op2_sel === OP2_IMI) -> imm_i_sext,
+    (op2_sel === OP2_IMS) -> imm_s_sext,
+  ))
+
   /*
    * Execute (EX)
    */
+
   // Arithmetic Logic Unit process arithmetic/logical calculations for each instruction.
   val alu_out = MuxCase(0.U(WORD_LEN.W), Seq(
-    // Load Word: x[rs1] + sext(imm_i)
-    // Calculate the address to load by adding immediate.
-    // This may cause integer overflow. In the case, Chisel truncates the value to 32bit value.
-    // ADDI: x[rs1] + sext(imm_i)
-    (inst === LW || inst === ADDI) -> (rs1_data + imm_i_sext),
-    // Store Word: x[rs1] + sext(imm_s)
-    (inst === SW) -> (rs1_data + imm_s_sext),
-    // x[rs1] + x[rs2]
-    (inst === ADD) -> (rs1_data + rs2_data),
-    // x[rs1] - x[rs2]
-    (inst === SUB) -> (rs1_data - rs2_data),
-    // x[rs1] & x[rs2]
-    (inst === AND) -> (rs1_data & rs2_data),
-    // x[rs1] | x[rs2]
-    (inst === OR) -> (rs1_data | rs2_data),
-    // x[rs1] ^ x[rs2]
-    (inst === XOR) -> (rs1_data ^ rs2_data),
-    // x[rs1] & sext(imm_i)
-    (inst === ANDI) -> (rs1_data & imm_s_sext),
-    // x[rs1] | sext(imm_i)
-    (inst === ORI) -> (rs1_data | imm_s_sext),
-    // x[rs1] ^ sext(imm_i)
-    (inst === XORI) -> (rs1_data ^ imm_s_sext),
+    (exe_fun === ALU_ADD) -> (op1_data + op2_data),
+    (exe_fun === ALU_SUB) -> (op1_data - op2_data),
+    (exe_fun === ALU_AND) -> (op1_data & op2_data),
+    (exe_fun === ALU_OR)  -> (op1_data | op2_data),
+    (exe_fun === ALU_XOR) -> (op1_data ^ op2_data),
   ))
 
   /*
    * Memory Access (MEM)
    */
-  // LW: x[rd] = M[x[rs1] + sext(imm_i)]
   io.dmem.addr := alu_out // Always output data to memory regardless of instruction
-
-  // SW: M[x[rs1] + sext(imm_s)] = x[rs2]
-  io.dmem.wen := inst === SW
+  io.dmem.wen := mem_wen // mem_wen is integer and here it is implicitly converted to bool
   io.dmem.wdata := rs2_data
 
   /*
    * Write Back (WB)
    */
+
   // By default, write back the ALU result to register
   val wb_data = MuxCase(alu_out, Seq(
-    (inst === LW) -> io.dmem.rdata, // Loaded data from memory
+    (wb_sel === WB_MEM) -> io.dmem.rdata, // Loaded data from memory
   ))
-  when(
-    inst === LW
-      || inst === ADD
-      || inst === ADDI
-      || inst === SUB
-      || inst === AND
-      || inst === OR
-      || inst === XOR
-      || inst === ANDI
-      || inst === ORI
-      || inst === XORI
-  ) {
+  when(rf_wen === REN_S) {
     regfile(wb_addr) := wb_data // Write back to the register specified by rd
   }
 
