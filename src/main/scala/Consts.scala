@@ -17,7 +17,7 @@ object Consts {
   val VTYPE_ADDR    = 0xC21
 
   val EXE_FUN_LEN = 5
-  val ALU_X       =  0.U(EXE_FUN_LEN.W)
+  val ALU_NONE    =  0.U(EXE_FUN_LEN.W)
   val ALU_ADD     =  1.U(EXE_FUN_LEN.W)
   val ALU_SUB     =  2.U(EXE_FUN_LEN.W)
   val ALU_AND     =  3.U(EXE_FUN_LEN.W)
@@ -54,18 +54,18 @@ object Consts {
   val OP2_IMJ = 4.U(OP2_LEN.W)
   val OP2_IMU = 5.U(OP2_LEN.W)
 
-  val MEN_LEN = 2
-  val MEN_X   = 0.U(MEN_LEN.W)
-  val MEN_S   = 1.U(MEN_LEN.W) // Scalar
-  val MEN_V   = 2.U(MEN_LEN.W) // Vector
+  val MEN_LEN    = 2
+  val MEN_NONE   = 0.U(MEN_LEN.W)
+  val MEN_SCALAR = 1.U(MEN_LEN.W) // Scalar
+  val MEN_VECTOR = 2.U(MEN_LEN.W) // Vector
 
-  val REN_LEN = 2
-  val REN_X   = 0.U(REN_LEN.W)
-  val REN_S   = 1.U(REN_LEN.W) // Scalar
-  val REN_V   = 2.U(REN_LEN.W) // Vector
+  val REN_LEN    = 2
+  val REN_NONE   = 0.U(REN_LEN.W)
+  val REN_SCALAR = 1.U(REN_LEN.W) // Scalar
+  val REN_VECTOR = 2.U(REN_LEN.W) // Vector
 
   val WB_SEL_LEN = 3
-  val WB_X       = 0.U(WB_SEL_LEN.W)
+  val WB_NONE    = 0.U(WB_SEL_LEN.W)
   val WB_ALU     = 0.U(WB_SEL_LEN.W)
   val WB_MEM     = 1.U(WB_SEL_LEN.W)
   val WB_PC      = 2.U(WB_SEL_LEN.W)

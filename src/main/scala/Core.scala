@@ -68,37 +68,33 @@ class Core extends Module {
   val imm_s = Cat(inst(31, 25), inst(11, 7)) // imm for S-type
   val imm_s_sext = Cat(Fill(20, imm_s(11)), imm_s)
 
-  // Decode table.
-  // Note: OP1 means 1st operand and OP2 means 2nd operand.
-  // Note: ALU_X means 'no output from ALU'.
-  // Note: MEN_X means 'no memory write'. S at MEN_S stands for Scalar
-  // Note: WB_X means 'no write back data'.
+  // Decode operand sources and memory/register write back behavior
   val List(exe_fun, op1_sel, op2_sel, mem_wen, rf_wen, wb_sel) = ListLookup(
     inst,
-    List(ALU_X, OP1_RS1, OP2_RS2, MEN_X, REN_X, WB_X),
+    List(ALU_NONE, OP1_RS1, OP2_RS2, MEN_NONE, REN_NONE, WB_NONE),
     Array(
       // x[rs1] + sext(imm_i)
-      LW   -> List(ALU_ADD, OP1_RS1, OP2_IMI, MEN_X , REN_S, WB_MEM),
+      LW   -> List(ALU_ADD, OP1_RS1, OP2_IMI, MEN_NONE,   REN_SCALAR, WB_MEM),
       // x[rs1] + sext(imm_s)
-      SW   -> List(ALU_ADD, OP1_RS1, OP2_IMS, MEN_S,  REN_X, WB_X),
+      SW   -> List(ALU_ADD, OP1_RS1, OP2_IMS, MEN_SCALAR, REN_NONE,   WB_NONE),
       // // x[rs1] + x[rs2]
-      ADD  -> List(ALU_ADD, OP1_RS1, OP2_RS2, MEN_X , REN_S, WB_ALU),
+      ADD  -> List(ALU_ADD, OP1_RS1, OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU),
       // x[rs1] + sext(imm_i)
-      ADDI -> List(ALU_ADD, OP1_RS1, OP2_IMI, MEN_X , REN_S, WB_ALU),
+      ADDI -> List(ALU_ADD, OP1_RS1, OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU),
       // x[rs1] - x[rs2]
-      SUB  -> List(ALU_SUB, OP1_RS1, OP2_RS2, MEN_X , REN_S, WB_ALU),
+      SUB  -> List(ALU_SUB, OP1_RS1, OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU),
       // x[rs1] & x[rs2]
-      AND  -> List(ALU_AND, OP1_RS1, OP2_RS2, MEN_X , REN_S, WB_ALU),
+      AND  -> List(ALU_AND, OP1_RS1, OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU),
       // x[rs1] | x[rs2]
-      OR   -> List(ALU_OR , OP1_RS1, OP2_RS2, MEN_X , REN_S, WB_ALU),
+      OR   -> List(ALU_OR,  OP1_RS1, OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU),
       // x[rs1] ^ x[rs2]
-      XOR  -> List(ALU_XOR, OP1_RS1, OP2_RS2, MEN_X , REN_S, WB_ALU),
+      XOR  -> List(ALU_XOR, OP1_RS1, OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU),
       // x[rs1] & sext(imm_i)
-      ANDI -> List(ALU_AND, OP1_RS1, OP2_IMI, MEN_X , REN_S, WB_ALU),
+      ANDI -> List(ALU_AND, OP1_RS1, OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU),
       // x[rs1] | sext(imm_i)
-      ORI  -> List(ALU_OR , OP1_RS1, OP2_IMI, MEN_X , REN_S, WB_ALU),
+      ORI  -> List(ALU_OR , OP1_RS1, OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU),
       // x[rs1] ^ sext(imm_i)
-      XORI -> List(ALU_XOR, OP1_RS1, OP2_IMI, MEN_X , REN_S, WB_ALU),
+      XORI -> List(ALU_XOR, OP1_RS1, OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU),
     ),
   )
 
@@ -138,11 +134,11 @@ class Core extends Module {
    * Write Back (WB)
    */
 
-  // By default, write back the ALU result to register
+  // By default, write back the ALU result to register (wb_sel == WB_ALU)
   val wb_data = MuxCase(alu_out, Seq(
     (wb_sel === WB_MEM) -> io.dmem.rdata, // Loaded data from memory
   ))
-  when(rf_wen === REN_S) {
+  when(rf_wen === REN_SCALAR) {
     regfile(wb_addr) := wb_data // Write back to the register specified by rd
   }
 
