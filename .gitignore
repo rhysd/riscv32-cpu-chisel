@@ -127,7 +127,7 @@ local.properties
 *.app
 *.i*86
 *.x86_64
-*.hex
+# *.hex
 
 # Debug files
 *.dSYM/

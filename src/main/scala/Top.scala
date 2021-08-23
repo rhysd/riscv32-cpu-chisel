@@ -11,8 +11,9 @@ class Top extends Module {
   val core = Module(new Core())
   val memory = Module(new Memory())
 
-  // Connect addr and inst ports
+  // Connect ports between core and memory
   core.io.imem <> memory.io.imem
+  core.io.dmem <> memory.io.dmem
 
   // Connect exit signal
   io.exit := core.io.exit
