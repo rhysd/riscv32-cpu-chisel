@@ -3,7 +3,7 @@ package cpu
 import chisel3._
 import chisel3.util._
 import chisel3.util.experimental.loadMemoryFromFile
-import common.Consts._
+import Consts._
 
 // Group input/output between CPU core and memory (see p.77)
 // 'I' stands for 'Instruction'.

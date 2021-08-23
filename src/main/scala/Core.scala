@@ -2,8 +2,8 @@ package cpu
 
 import chisel3._
 import chisel3.util._
-import common.Consts._
-import common.Instructions._
+import Consts._
+import Instructions._
 
 class Core extends Module {
   val io = IO(new Bundle {
@@ -84,6 +84,18 @@ class Core extends Module {
     (inst === ADD) -> (rs1_data + rs2_data),
     // x[rs1] - x[rs2]
     (inst === SUB) -> (rs1_data - rs2_data),
+    // x[rs1] & x[rs2]
+    (inst === AND) -> (rs1_data & rs2_data),
+    // x[rs1] | x[rs2]
+    (inst === OR) -> (rs1_data | rs2_data),
+    // x[rs1] ^ x[rs2]
+    (inst === XOR) -> (rs1_data ^ rs2_data),
+    // x[rs1] & sext(imm_i)
+    (inst === ANDI) -> (rs1_data & imm_s_sext),
+    // x[rs1] | sext(imm_i)
+    (inst === ORI) -> (rs1_data | imm_s_sext),
+    // x[rs1] ^ sext(imm_i)
+    (inst === XORI) -> (rs1_data ^ imm_s_sext),
   ))
 
   /*
@@ -108,6 +120,12 @@ class Core extends Module {
       || inst === ADD
       || inst === ADDI
       || inst === SUB
+      || inst === AND
+      || inst === OR
+      || inst === XOR
+      || inst === ANDI
+      || inst === ORI
+      || inst === XORI
   ) {
     regfile(wb_addr) := wb_data // Write back to the register specified by rd
   }
