@@ -17,7 +17,7 @@ class Core extends Module {
   val regfile = Mem(32, UInt(WORD_LEN.W))
 
   /*
-   * Instruction Fetch (IF) Stage
+   * Instruction Fetch (IF)
    */
 
   // Program counter register. It counts up per 4 bytes since size of instruction is 32bits, but
@@ -32,4 +32,8 @@ class Core extends Module {
 
   // `exit` port output is `true` when the instruction is 0x34333231. 0x34333231 means the end of a loaded program.
   io.exit := inst === 0x34333231.U(WORD_LEN.W)
+
+  printf(p"pc:   0x${Hexadecimal(pc)}\n")
+  printf(p"inst: 0x${Hexadecimal(inst)}\n")
+  printf("-------------\n")
 }
