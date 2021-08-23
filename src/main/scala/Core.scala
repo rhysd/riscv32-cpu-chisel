@@ -39,19 +39,19 @@ class Core extends Module {
   // Spec 2.2 Base Instruction Formats
   //
   //  31      30 29 28 27 26 25 24 23 22 21   20   19 18 17 16 15 14 13 12 11 10 9 8    7   6 5 4 3 2 1 0
-  // -----------------------------------------------------------------------------------------------------
+  //  ---------------------------------------------------------------------------------------------------
   // |         funct7          |       rs2        |     rs1      | funct3 |      rd        |   opcode    | R-type
-  // -----------------------------------------------------------------------------------------------------
+  //  ---------------------------------------------------------------------------------------------------
   // |                imm[11:0]                   |     rs1      | funct3 |      rd        |   opcode    | I-type
-  // -----------------------------------------------------------------------------------------------------
+  //  ---------------------------------------------------------------------------------------------------
   // |        imm[11:5]        |       rs2        |     rs1      | funct3 |   imm[4:0]     |   opcode    | S-type
-  // -----------------------------------------------------------------------------------------------------
+  //  ---------------------------------------------------------------------------------------------------
   // |imm[12]|    imm[10:5]    |       rs2        |     rs1      | funct3 |imm[4:1]|imm[11]|   opcode    | B-type
-  // -----------------------------------------------------------------------------------------------------
+  //  ---------------------------------------------------------------------------------------------------
   // |                             imm[31:12]                             |      rd        |   opcode    | U-type
-  // -----------------------------------------------------------------------------------------------------
+  //  ---------------------------------------------------------------------------------------------------
   // |imm[20]|         imm[10:1]          |imm[11]|      imm[19:12]       |      rd        |   opcode    | J-type
-  // -----------------------------------------------------------------------------------------------------
+  //  ---------------------------------------------------------------------------------------------------
 
   val rs1_addr = inst(19, 15)
   val rs2_addr = inst(24, 20)
@@ -76,9 +76,14 @@ class Core extends Module {
     // Load Word: x[rs1] + sext(imm_i)
     // Calculate the address to load by adding immediate.
     // This may cause integer overflow. In the case, Chisel truncates the value to 32bit value.
-    (inst === LW) -> (rs1_data + imm_i_sext),
+    // ADDI: x[rs1] + sext(imm_i)
+    (inst === LW || inst === ADDI) -> (rs1_data + imm_i_sext),
     // Store Word: x[rs1] + sext(imm_s)
     (inst === SW) -> (rs1_data + imm_s_sext),
+    // x[rs1] + x[rs2]
+    (inst === ADD) -> (rs1_data + rs2_data),
+    // x[rs1] - x[rs2]
+    (inst === SUB) -> (rs1_data - rs2_data),
   ))
 
   /*
@@ -94,9 +99,17 @@ class Core extends Module {
   /*
    * Write Back (WB)
    */
-  val wb_data = io.dmem.rdata
-  when(inst === LW) {
-    regfile(wb_addr) := wb_data // Store loaded data from memory to register
+  // By default, write back the ALU result to register
+  val wb_data = MuxCase(alu_out, Seq(
+    (inst === LW) -> io.dmem.rdata, // Loaded data from memory
+  ))
+  when(
+    inst === LW
+      || inst === ADD
+      || inst === ADDI
+      || inst === SUB
+  ) {
+    regfile(wb_addr) := wb_data // Write back to the register specified by rd
   }
 
   // For debugging.
