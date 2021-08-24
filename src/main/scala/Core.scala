@@ -15,6 +15,8 @@ class Core extends Module {
     val exit = Output(Bool())
   })
 
+  val inst = io.imem.inst
+
   // RISC-V has 32 registers. Size is 32bits (32bits * 32regs).
   val regfile = Mem(32, UInt(WORD_LEN.W))
 
@@ -23,20 +25,24 @@ class Core extends Module {
    */
 
   // Uninitialized ports for branch instructions. They will be connected later.
-  var br_flag = Wire(Bool())
+  val br_flag = Wire(Bool())
   val br_target = Wire(UInt(WORD_LEN.W))
+
+  val jmp_flag = inst === JAL || inst === JALR
+  val alu_out = Wire(UInt(WORD_LEN.W))
 
   // Program counter register. It counts up per 4 bytes since size of instruction is 32bits, but
   // memory address is byte oriented.
   val pc = RegInit(START_ADDR)
-  pc := MuxCase(pc + 4.U(WORD_LEN.W), Seq(
-    br_flag -> br_target, // Branch instructions write back br_target address to program counter
+  val pc_next = pc + 4.U(WORD_LEN.W)
+  pc := MuxCase(pc_next, Seq(
+    br_flag  -> br_target, // Branch instructions write back br_target address to program counter
+    jmp_flag -> alu_out, // Jump instructions calculate the jump address by ALU
   ))
 
   // Connect program counter to address output. This output is connected to memory to fetch the
   // address as instruction
   io.imem.addr := pc
-  val inst = io.imem.inst
 
   /*
    * Instruction Decode (ID)
@@ -74,12 +80,16 @@ class Core extends Module {
   val imm_s = Cat(inst(31, 25), inst(11, 7)) // imm for S-type
   val imm_s_sext = Cat(Fill(20, imm_s(11)), imm_s)
 
-  // decode imm of B-type instruction
+  // Decode imm of B-type instruction
   val imm_b = Cat(inst(31), inst(7), inst(30, 25), inst(11, 8))
   // imm[0] does not exist in B-type instruction. This is because the first bit of program counter
   // is always zero (p.126). Size of instruction is 32bit or 16bit, so instruction pointer (pc)
   // address always points an even address.
   val imm_b_sext = Cat(Fill(19, imm_b(11)), imm_b, 0.U(1.U))
+
+  // Decode imm of J-type instruction
+  val imm_j = Cat(inst(31), inst(19, 12), inst(20), inst(30, 21))
+  val imm_j_sext = Cat(Fill(11, imm_j(19)), imm_j, 0.U(1.U)) // Set LSB to zero
 
   // Decode operand sources and memory/register write back behavior
   val List(exe_fun, op1_sel, op2_sel, mem_wen, rf_wen, wb_sel) = ListLookup(
@@ -116,12 +126,15 @@ class Core extends Module {
       BGEU  -> List(BR_BGEU,  OP1_RS1, OP2_RS2, MEN_NONE,   REN_NONE,   WB_NONE), // x[rs1] >=u x[rs2] then PC+sext(imm_b)
       BLT   -> List(BR_BLT,   OP1_RS1, OP2_RS2, MEN_NONE,   REN_NONE,   WB_NONE), // x[rs1] <s x[rs2]  then PC+sext(imm_b)
       BLTU  -> List(BR_BLTU,  OP1_RS1, OP2_RS2, MEN_NONE,   REN_NONE,   WB_NONE), // x[rs1] <u x[rs2]  then PC+sext(imm_b)
+      JAL   -> List(ALU_ADD,  OP1_PC,  OP2_IMJ, MEN_NONE,   REN_SCALAR, WB_PC), // x[rd] = pc+4 and PC+sext(imm_j)
+      JALR  -> List(ALU_JALR, OP1_RS1, OP2_IMI, MEN_NONE,   REN_SCALAR, WB_PC), // x[rd] = pc+4 and (x[rs1]+sext(imm_i))&~1
     ),
   )
 
   // Determine 1st operand data signal
   val op1_data = MuxCase(0.U(WORD_LEN.W), Seq(
     (op1_sel === OP1_RS1) -> rs1_data,
+    (op1_sel === OP1_PC) -> pc,
   ))
 
   // Determine 2nd operand data signal
@@ -129,6 +142,7 @@ class Core extends Module {
     (op2_sel === OP2_RS2) -> rs2_data,
     (op2_sel === OP2_IMI) -> imm_i_sext,
     (op2_sel === OP2_IMS) -> imm_s_sext,
+    (op2_sel === OP2_IMJ) -> imm_j_sext,
   ))
 
   /*
@@ -136,7 +150,7 @@ class Core extends Module {
    */
 
   // Arithmetic Logic Unit process arithmetic/logical calculations for each instruction.
-  val alu_out = MuxCase(0.U(WORD_LEN.W), Seq(
+  alu_out := MuxCase(0.U(WORD_LEN.W), Seq(
     (exe_fun === ALU_ADD)  -> (op1_data + op2_data),
     (exe_fun === ALU_SUB)  -> (op1_data - op2_data),
     (exe_fun === ALU_AND)  -> (op1_data & op2_data),
@@ -150,6 +164,8 @@ class Core extends Module {
     // Compare as signed integers
     (exe_fun === ALU_SLT)  -> (op1_data.asSInt() < op2_data.asSInt()).asUInt(),
     (exe_fun === ALU_SLTU) -> (op1_data < op2_data).asUInt(),
+    // &~1 sets the LSB to zero (& 0b1111..1110) for jump instructions
+    (exe_fun === ALU_JALR) -> ((op1_data + op2_data) & ~1.U(WORD_LEN.W)),
   ))
 
   // Branch instructions
@@ -177,6 +193,7 @@ class Core extends Module {
   // By default, write back the ALU result to register (wb_sel == WB_ALU)
   val wb_data = MuxCase(alu_out, Seq(
     (wb_sel === WB_MEM) -> io.dmem.rdata, // Loaded data from memory
+    (wb_sel === WB_PC) -> pc_next, // Jump instruction stores the next pc to x[rd]
   ))
   when(rf_wen === REN_SCALAR) {
     regfile(wb_addr) := wb_data // Write back to the register specified by rd
