@@ -22,10 +22,16 @@ class Core extends Module {
    * Instruction Fetch (IF)
    */
 
+  // Uninitialized ports for branch instructions. They will be connected later.
+  var br_flag = Wire(Bool())
+  val br_target = Wire(UInt(WORD_LEN.W))
+
   // Program counter register. It counts up per 4 bytes since size of instruction is 32bits, but
   // memory address is byte oriented.
   val pc = RegInit(START_ADDR)
-  pc := pc + 4.U(WORD_LEN.W) // Add 4 bytes per cycle
+  pc := MuxCase(pc + 4.U(WORD_LEN.W), Seq(
+    br_flag -> br_target, // Branch instructions write back br_target address to program counter
+  ))
 
   // Connect program counter to address output. This output is connected to memory to fetch the
   // address as instruction
@@ -68,15 +74,22 @@ class Core extends Module {
   val imm_s = Cat(inst(31, 25), inst(11, 7)) // imm for S-type
   val imm_s_sext = Cat(Fill(20, imm_s(11)), imm_s)
 
+  // decode imm of B-type instruction
+  val imm_b = Cat(inst(31), inst(7), inst(30, 25), inst(11, 8))
+  // imm[0] does not exist in B-type instruction. This is because the first bit of program counter
+  // is always zero (p.126). Size of instruction is 32bit or 16bit, so instruction pointer (pc)
+  // address always points an even address.
+  val imm_b_sext = Cat(Fill(19, imm_b(11)), imm_b, 0.U(1.U))
+
   // Decode operand sources and memory/register write back behavior
   val List(exe_fun, op1_sel, op2_sel, mem_wen, rf_wen, wb_sel) = ListLookup(
     inst,
     List(ALU_NONE, OP1_RS1, OP2_RS2, MEN_NONE, REN_NONE, WB_NONE),
     Array(
-      // 2.6
+      // 2.6 Load and Store Instructions
       LW    -> List(ALU_ADD,  OP1_RS1, OP2_IMI, MEN_NONE,   REN_SCALAR, WB_MEM), // x[rs1] + sext(imm_i)
       SW    -> List(ALU_ADD,  OP1_RS1, OP2_IMS, MEN_SCALAR, REN_NONE,   WB_NONE), // x[rs1] + sext(imm_s)
-      // 2.4
+      // 2.4 Integer Computational Instructions
       ADD   -> List(ALU_ADD,  OP1_RS1, OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] + x[rs2]
       ADDI  -> List(ALU_ADD,  OP1_RS1, OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] + sext(imm_i)
       SUB   -> List(ALU_SUB,  OP1_RS1, OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] - x[rs2]
@@ -96,6 +109,13 @@ class Core extends Module {
       SLTU  -> List(ALU_SLTU, OP1_RS1, OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] <u x[rs2]
       SLTI  -> List(ALU_SLT,  OP1_RS1, OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] <s imm_i_sext
       SLTIU -> List(ALU_SLTU, OP1_RS1, OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] <u imm_i_sext
+      // 2.5 Control Transfer Instructions
+      BEQ   -> List(BR_BEQ,   OP1_RS1, OP2_RS2, MEN_NONE,   REN_NONE,   WB_NONE), // x[rs1] === x[rs2] then PC+sext(imm_b)
+      BNE   -> List(BR_BNE,   OP1_RS1, OP2_RS2, MEN_NONE,   REN_NONE,   WB_NONE), // x[rs1] =/= x[rs2] then PC+sext(imm_b)
+      BGE   -> List(BR_BGE,   OP1_RS1, OP2_RS2, MEN_NONE,   REN_NONE,   WB_NONE), // x[rs1] >=s x[rs2] then PC+sext(imm_b)
+      BGEU  -> List(BR_BGEU,  OP1_RS1, OP2_RS2, MEN_NONE,   REN_NONE,   WB_NONE), // x[rs1] >=u x[rs2] then PC+sext(imm_b)
+      BLT   -> List(BR_BLT,   OP1_RS1, OP2_RS2, MEN_NONE,   REN_NONE,   WB_NONE), // x[rs1] <s x[rs2]  then PC+sext(imm_b)
+      BLTU  -> List(BR_BLTU,  OP1_RS1, OP2_RS2, MEN_NONE,   REN_NONE,   WB_NONE), // x[rs1] <u x[rs2]  then PC+sext(imm_b)
     ),
   )
 
@@ -131,6 +151,17 @@ class Core extends Module {
     (exe_fun === ALU_SLT)  -> (op1_data.asSInt() < op2_data.asSInt()).asUInt(),
     (exe_fun === ALU_SLTU) -> (op1_data < op2_data).asUInt(),
   ))
+
+  // Branch instructions
+  br_flag := MuxCase(false.B, Seq(
+    (exe_fun === BR_BEQ)  ->  (op1_data === op2_data),
+    (exe_fun === BR_BNE)  -> !(op1_data === op2_data),
+    (exe_fun === BR_BLT)  ->  (op1_data.asSInt() < op2_data.asSInt()),
+    (exe_fun === BR_BGE)  -> !(op1_data.asSInt() < op2_data.asSInt()),
+    (exe_fun === BR_BLTU) ->  (op1_data < op2_data),
+    (exe_fun === BR_BGEU) -> !(op1_data < op2_data),
+  ))
+  br_target := pc + imm_b_sext
 
   /*
    * Memory Access (MEM)
