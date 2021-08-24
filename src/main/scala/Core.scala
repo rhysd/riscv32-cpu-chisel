@@ -50,20 +50,20 @@ class Core extends Module {
 
   // Spec 2.2 Base Instruction Formats
   //
-  //  31      30 29 28 27 26 25 24 23 22 21   20   19 18 17 16 15 14 13 12 11 10 9 8    7   6 5 4 3 2 1 0
-  //  ---------------------------------------------------------------------------------------------------
-  // |         funct7          |       rs2        |     rs1      | funct3 |      rd        |   opcode    | R-type
-  //  ---------------------------------------------------------------------------------------------------
-  // |                imm[11:0]                   |     rs1      | funct3 |      rd        |   opcode    | I-type
-  //  ---------------------------------------------------------------------------------------------------
-  // |        imm[11:5]        |       rs2        |     rs1      | funct3 |   imm[4:0]     |   opcode    | S-type
-  //  ---------------------------------------------------------------------------------------------------
-  // |imm[12]|    imm[10:5]    |       rs2        |     rs1      | funct3 |imm[4:1]|imm[11]|   opcode    | B-type
-  //  ---------------------------------------------------------------------------------------------------
-  // |                             imm[31:12]                             |      rd        |   opcode    | U-type
-  //  ---------------------------------------------------------------------------------------------------
-  // |imm[20]|         imm[10:1]          |imm[11]|      imm[19:12]       |      rd        |   opcode    | J-type
-  //  ---------------------------------------------------------------------------------------------------
+  //  31      30 29 28 27 26 25 24 23 22 21   20   19 18 17 16 15 14 13 12 11 10 9 8     7   6 5 4 3 2 1 0
+  //  ----------------------------------------------------------------------------------------------------
+  // |         funct7          |       rs2        |     rs1      | funct3 |       rd        |   opcode    | R-type
+  //  ----------------------------------------------------------------------------------------------------
+  // |                imm[11:0]                   |     rs1      | funct3 |       rd        |   opcode    | I-type
+  //  ----------------------------------------------------------------------------------------------------
+  // |        imm[11:5]        |       rs2        |     rs1      | funct3 |   imm[4:0]      |   opcode    | S-type
+  //  ----------------------------------------------------------------------------------------------------
+  // |imm[12]|    imm[10:5]    |       rs2        |     rs1      | funct3 |imm[4:1] |imm[11]|   opcode    | B-type
+  //  ----------------------------------------------------------------------------------------------------
+  // |                             imm[31:12]                             |       rd        |   opcode    | U-type
+  //  ----------------------------------------------------------------------------------------------------
+  // |imm[20]|         imm[10:1]          |imm[11]|      imm[19:12]       |       rd        |   opcode    | J-type
+  //  ----------------------------------------------------------------------------------------------------
 
   val rs1_addr = inst(19, 15)
   val rs2_addr = inst(24, 20)
@@ -95,45 +95,56 @@ class Core extends Module {
   val imm_u = inst(31, 12)
   val imm_u_shifted = Cat(imm_u, Fill(12, 0.U)) // for LUI and AUIPC
 
+  // Decode imm of I-type instruction
+  val imm_z = inst(19, 15)
+  val imm_z_uext = Cat(Fill(27, 0.U), imm_z) // for CSR instructions
+
   // Decode operand sources and memory/register write back behavior
-  val List(exe_fun, op1_sel, op2_sel, mem_wen, rf_wen, wb_sel) = ListLookup(
+  val List(exe_fun, op1_sel, op2_sel, mem_wen, rf_wen, wb_sel, csr_cmd) = ListLookup(
     inst,
-    List(ALU_NONE, OP1_RS1, OP2_RS2, MEN_NONE, REN_NONE, WB_NONE),
+    List(ALU_NONE, OP1_RS1, OP2_RS2, MEN_NONE, REN_NONE, WB_NONE, CSR_NONE),
     Array(
       // 2.6 Load and Store Instructions
-      LW    -> List(ALU_ADD,  OP1_RS1,  OP2_IMI, MEN_NONE,   REN_SCALAR, WB_MEM), // x[rs1] + sext(imm_i)
-      SW    -> List(ALU_ADD,  OP1_RS1,  OP2_IMS, MEN_SCALAR, REN_NONE,   WB_NONE), // x[rs1] + sext(imm_s)
+      LW     -> List(ALU_ADD,  OP1_RS1,  OP2_IMI,  MEN_NONE,   REN_SCALAR, WB_MEM,  CSR_NONE), // x[rs1] + sext(imm_i)
+      SW     -> List(ALU_ADD,  OP1_RS1,  OP2_IMS,  MEN_SCALAR, REN_NONE,   WB_NONE, CSR_NONE), // x[rs1] + sext(imm_s)
       // 2.4 Integer Computational Instructions
-      ADD   -> List(ALU_ADD,  OP1_RS1,  OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] + x[rs2]
-      ADDI  -> List(ALU_ADD,  OP1_RS1,  OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] + sext(imm_i)
-      SUB   -> List(ALU_SUB,  OP1_RS1,  OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] - x[rs2]
-      AND   -> List(ALU_AND,  OP1_RS1,  OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] & x[rs2]
-      OR    -> List(ALU_OR,   OP1_RS1,  OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] | x[rs2]
-      XOR   -> List(ALU_XOR,  OP1_RS1,  OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] ^ x[rs2]
-      ANDI  -> List(ALU_AND,  OP1_RS1,  OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] & sext(imm_i)
-      ORI   -> List(ALU_OR ,  OP1_RS1,  OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] | sext(imm_i)
-      XORI  -> List(ALU_XOR,  OP1_RS1,  OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] ^ sext(imm_i)
-      SLL   -> List(ALU_SLL,  OP1_RS1,  OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] << x[rs2](4,0)
-      SRL   -> List(ALU_SRL,  OP1_RS1,  OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] >>u x[rs2](4,0)
-      SRA   -> List(ALU_SRA,  OP1_RS1,  OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] >>s x[rs2](4,0)
-      SLLI  -> List(ALU_SLL,  OP1_RS1,  OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] << imm_i_sext(4,0)
-      SRLI  -> List(ALU_SRL,  OP1_RS1,  OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] >>u imm_i_sext(4,0)
-      SRAI  -> List(ALU_SRA,  OP1_RS1,  OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] >>s imm_i_sext(4,0)
-      SLT   -> List(ALU_SLT,  OP1_RS1,  OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] <s x[rs2]
-      SLTU  -> List(ALU_SLTU, OP1_RS1,  OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] <u x[rs2]
-      SLTI  -> List(ALU_SLT,  OP1_RS1,  OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] <s imm_i_sext
-      SLTIU -> List(ALU_SLTU, OP1_RS1,  OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] <u imm_i_sext
-      LUI   -> List(ALU_ADD,  OP1_NONE, OP2_IMU, MEN_NONE,   REN_SCALAR, WB_ALU), // sext(imm_u[31:12] << 12)
-      AUIPC -> List(ALU_ADD,  OP1_PC,   OP2_IMU, MEN_NONE,   REN_SCALAR, WB_ALU), // PC + sext(imm_u[31:12] << 12)
+      ADD    -> List(ALU_ADD,  OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // x[rs1] + x[rs2]
+      ADDI   -> List(ALU_ADD,  OP1_RS1,  OP2_IMI,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // x[rs1] + sext(imm_i)
+      SUB    -> List(ALU_SUB,  OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // x[rs1] - x[rs2]
+      AND    -> List(ALU_AND,  OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // x[rs1] & x[rs2]
+      OR     -> List(ALU_OR,   OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // x[rs1] | x[rs2]
+      XOR    -> List(ALU_XOR,  OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // x[rs1] ^ x[rs2]
+      ANDI   -> List(ALU_AND,  OP1_RS1,  OP2_IMI,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // x[rs1] & sext(imm_i)
+      ORI    -> List(ALU_OR ,  OP1_RS1,  OP2_IMI,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // x[rs1] | sext(imm_i)
+      XORI   -> List(ALU_XOR,  OP1_RS1,  OP2_IMI,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // x[rs1] ^ sext(imm_i)
+      SLL    -> List(ALU_SLL,  OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // x[rs1] << x[rs2](4,0)
+      SRL    -> List(ALU_SRL,  OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // x[rs1] >>u x[rs2](4,0)
+      SRA    -> List(ALU_SRA,  OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // x[rs1] >>s x[rs2](4,0)
+      SLLI   -> List(ALU_SLL,  OP1_RS1,  OP2_IMI,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // x[rs1] << imm_i_sext(4,0)
+      SRLI   -> List(ALU_SRL,  OP1_RS1,  OP2_IMI,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // x[rs1] >>u imm_i_sext(4,0)
+      SRAI   -> List(ALU_SRA,  OP1_RS1,  OP2_IMI,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // x[rs1] >>s imm_i_sext(4,0)
+      SLT    -> List(ALU_SLT,  OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // x[rs1] <s x[rs2]
+      SLTU   -> List(ALU_SLTU, OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // x[rs1] <u x[rs2]
+      SLTI   -> List(ALU_SLT,  OP1_RS1,  OP2_IMI,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // x[rs1] <s imm_i_sext
+      SLTIU  -> List(ALU_SLTU, OP1_RS1,  OP2_IMI,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // x[rs1] <u imm_i_sext
+      LUI    -> List(ALU_ADD,  OP1_NONE, OP2_IMU,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // sext(imm_u[31:12] << 12)
+      AUIPC  -> List(ALU_ADD,  OP1_PC,   OP2_IMU,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // PC + sext(imm_u[31:12] << 12)
       // 2.5 Control Transfer Instructions
-      BEQ   -> List(BR_BEQ,   OP1_RS1,  OP2_RS2, MEN_NONE,   REN_NONE,   WB_NONE), // x[rs1] === x[rs2] then PC+sext(imm_b)
-      BNE   -> List(BR_BNE,   OP1_RS1,  OP2_RS2, MEN_NONE,   REN_NONE,   WB_NONE), // x[rs1] =/= x[rs2] then PC+sext(imm_b)
-      BGE   -> List(BR_BGE,   OP1_RS1,  OP2_RS2, MEN_NONE,   REN_NONE,   WB_NONE), // x[rs1] >=s x[rs2] then PC+sext(imm_b)
-      BGEU  -> List(BR_BGEU,  OP1_RS1,  OP2_RS2, MEN_NONE,   REN_NONE,   WB_NONE), // x[rs1] >=u x[rs2] then PC+sext(imm_b)
-      BLT   -> List(BR_BLT,   OP1_RS1,  OP2_RS2, MEN_NONE,   REN_NONE,   WB_NONE), // x[rs1] <s x[rs2]  then PC+sext(imm_b)
-      BLTU  -> List(BR_BLTU,  OP1_RS1,  OP2_RS2, MEN_NONE,   REN_NONE,   WB_NONE), // x[rs1] <u x[rs2]  then PC+sext(imm_b)
-      JAL   -> List(ALU_ADD,  OP1_PC,   OP2_IMJ, MEN_NONE,   REN_SCALAR, WB_PC), // x[rd] = PC+4 and PC+sext(imm_j)
-      JALR  -> List(ALU_JALR, OP1_RS1,  OP2_IMI, MEN_NONE,   REN_SCALAR, WB_PC), // x[rd] = PC+4 and (x[rs1]+sext(imm_i))&~1
+      BEQ    -> List(BR_BEQ,   OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_NONE,   WB_NONE, CSR_NONE), // x[rs1] === x[rs2] then PC+sext(imm_b)
+      BNE    -> List(BR_BNE,   OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_NONE,   WB_NONE, CSR_NONE), // x[rs1] =/= x[rs2] then PC+sext(imm_b)
+      BGE    -> List(BR_BGE,   OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_NONE,   WB_NONE, CSR_NONE), // x[rs1] >=s x[rs2] then PC+sext(imm_b)
+      BGEU   -> List(BR_BGEU,  OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_NONE,   WB_NONE, CSR_NONE), // x[rs1] >=u x[rs2] then PC+sext(imm_b)
+      BLT    -> List(BR_BLT,   OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_NONE,   WB_NONE, CSR_NONE), // x[rs1] <s x[rs2]  then PC+sext(imm_b)
+      BLTU   -> List(BR_BLTU,  OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_NONE,   WB_NONE, CSR_NONE), // x[rs1] <u x[rs2]  then PC+sext(imm_b)
+      JAL    -> List(ALU_ADD,  OP1_PC,   OP2_IMJ,  MEN_NONE,   REN_SCALAR, WB_PC,   CSR_NONE), // x[rd] <- PC+4 and PC+sext(imm_j)
+      JALR   -> List(ALU_JALR, OP1_RS1,  OP2_IMI,  MEN_NONE,   REN_SCALAR, WB_PC,   CSR_NONE), // x[rd] <- PC+4 and (x[rs1]+sext(imm_i))&~1
+      // 9.1 "Zicsr", Control and Status Register (CSR) Instructions
+      CSRRW  -> List(ALU_RS1,  OP1_RS1,  OP2_NONE, MEN_NONE,   REN_SCALAR, WB_CSR,  CSR_W), // CSRs[csr] <- x[rs1]
+      CSRRWI -> List(ALU_RS1,  OP1_IMZ,  OP2_NONE, MEN_NONE,   REN_SCALAR, WB_CSR,  CSR_W), // CSRs[csr] <- uext(imm_z)
+      CSRRS  -> List(ALU_RS1,  OP1_RS1,  OP2_NONE, MEN_NONE,   REN_SCALAR, WB_CSR,  CSR_S), // CSRs[csr] <- CSRs[csr] | x[rs1]
+      CSRRSI -> List(ALU_RS1,  OP1_IMZ,  OP2_NONE, MEN_NONE,   REN_SCALAR, WB_CSR,  CSR_S), // CSRs[csr] <- CSRs[csr] | uext(imm_z)
+      CSRRC  -> List(ALU_RS1,  OP1_RS1,  OP2_NONE, MEN_NONE,   REN_SCALAR, WB_CSR,  CSR_C), // CSRs[csr] <- CSRs[csr]&~x[rs1]
+      CSRRCI -> List(ALU_RS1,  OP1_IMZ,  OP2_NONE, MEN_NONE,   REN_SCALAR, WB_CSR,  CSR_C), // CSRs[csr] <- CSRs[csr]&~uext(imm_z)
     ),
   )
 
@@ -173,6 +184,7 @@ class Core extends Module {
     (exe_fun === ALU_SLTU) -> (op1_data < op2_data).asUInt(),
     // &~1 sets the LSB to zero (& 0b1111..1110) for jump instructions
     (exe_fun === ALU_JALR) -> ((op1_data + op2_data) & ~1.U(WORD_LEN.W)),
+    (exe_fun === ALU_RS1) -> op1_data,
   ))
 
   // Branch instructions
@@ -193,6 +205,20 @@ class Core extends Module {
   io.dmem.wen := mem_wen // mem_wen is integer and here it is implicitly converted to bool
   io.dmem.wdata := rs2_data
 
+  // Control and Status Registers
+  val csr_regfile = Mem(4096, UInt(WORD_LEN.W))
+  val csr_addr = inst(31, 20) // I-type imm value
+  val csr_rdata = csr_regfile(csr_addr) // Read CSRs[csr]
+  val csr_wdata = MuxCase(0.U(WORD_LEN.W), Seq(
+    (csr_cmd === CSR_W) -> op1_data, // Write
+    (csr_cmd === CSR_S) -> (csr_rdata | op1_data), // Read and Set Bits
+    (csr_cmd === CSR_C) -> (csr_rdata & ~op1_data), // Read and Clear Bits
+  ))
+
+  when(csr_cmd =/= CSR_NONE) {
+    csr_regfile(csr_addr) := csr_wdata
+  }
+
   /*
    * Write Back (WB)
    */
@@ -201,6 +227,7 @@ class Core extends Module {
   val wb_data = MuxCase(alu_out, Seq(
     (wb_sel === WB_MEM) -> io.dmem.rdata, // Loaded data from memory
     (wb_sel === WB_PC) -> pc_next, // Jump instruction stores the next pc to x[rd]
+    (wb_sel === WB_CSR) -> csr_rdata, // CSR instruction write back CSRs[csr]
   ))
   when(rf_wen === REN_SCALAR) {
     regfile(wb_addr) := wb_data // Write back to the register specified by rd

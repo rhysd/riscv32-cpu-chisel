@@ -35,7 +35,7 @@ object Consts {
   val BR_BLTU     = 15.U(EXE_FUN_LEN.W)
   val BR_BGEU     = 16.U(EXE_FUN_LEN.W)
   val ALU_JALR    = 17.U(EXE_FUN_LEN.W)
-  val ALU_COPY1   = 18.U(EXE_FUN_LEN.W)
+  val ALU_RS1     = 18.U(EXE_FUN_LEN.W) // Copy RS1
   val ALU_VADDVV  = 19.U(EXE_FUN_LEN.W)
   val VSET        = 20.U(EXE_FUN_LEN.W)
   val ALU_PCNT    = 21.U(EXE_FUN_LEN.W)
@@ -46,13 +46,13 @@ object Consts {
   val OP1_NONE = 2.U(OP1_LEN.W)
   val OP1_IMZ  = 3.U(OP1_LEN.W)
 
-  val OP2_LEN = 3
-  val OP2_X   = 0.U(OP2_LEN.W)
-  val OP2_RS2 = 1.U(OP2_LEN.W)
-  val OP2_IMI = 2.U(OP2_LEN.W)
-  val OP2_IMS = 3.U(OP2_LEN.W)
-  val OP2_IMJ = 4.U(OP2_LEN.W)
-  val OP2_IMU = 5.U(OP2_LEN.W)
+  val OP2_LEN  = 3
+  val OP2_NONE = 0.U(OP2_LEN.W)
+  val OP2_RS2  = 1.U(OP2_LEN.W)
+  val OP2_IMI  = 2.U(OP2_LEN.W)
+  val OP2_IMS  = 3.U(OP2_LEN.W)
+  val OP2_IMJ  = 4.U(OP2_LEN.W)
+  val OP2_IMU  = 5.U(OP2_LEN.W)
 
   val MEN_LEN    = 2
   val MEN_NONE   = 0.U(MEN_LEN.W)
@@ -82,11 +82,11 @@ object Consts {
   val MW_HU  = 4.U(MW_LEN.W)
   val MW_BU  = 5.U(MW_LEN.W)
 
-  val CSR_LEN = 3
-  val CSR_X   = 0.U(CSR_LEN.W)
-  val CSR_W   = 1.U(CSR_LEN.W)
-  val CSR_S   = 2.U(CSR_LEN.W)
-  val CSR_C   = 3.U(CSR_LEN.W)
-  val CSR_E   = 4.U(CSR_LEN.W)
-  val CSR_V   = 5.U(CSR_LEN.W)
+  val CSR_LEN  = 3
+  val CSR_NONE = 0.U(CSR_LEN.W)
+  val CSR_W    = 1.U(CSR_LEN.W) // Write
+  val CSR_S    = 2.U(CSR_LEN.W) // Set bits
+  val CSR_C    = 3.U(CSR_LEN.W) // Clear bits
+  val CSR_E    = 4.U(CSR_LEN.W)
+  val CSR_V    = 5.U(CSR_LEN.W)
 }
