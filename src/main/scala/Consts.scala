@@ -87,6 +87,6 @@ object Consts {
   val CSR_W    = 1.U(CSR_LEN.W) // Write
   val CSR_S    = 2.U(CSR_LEN.W) // Set bits
   val CSR_C    = 3.U(CSR_LEN.W) // Clear bits
-  val CSR_E    = 4.U(CSR_LEN.W)
+  val CSR_E    = 4.U(CSR_LEN.W) // Exception (ECALL)
   val CSR_V    = 5.U(CSR_LEN.W)
 }

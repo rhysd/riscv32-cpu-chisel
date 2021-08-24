@@ -19,6 +19,8 @@ class Core extends Module {
 
   // RISC-V has 32 registers. Size is 32bits (32bits * 32regs).
   val regfile = Mem(32, UInt(WORD_LEN.W))
+  // Control and Status Registers
+  val csr_regfile = Mem(4096, UInt(WORD_LEN.W))
 
   /*
    * Instruction Fetch (IF)
@@ -38,6 +40,9 @@ class Core extends Module {
   pc := MuxCase(pc_next, Seq(
     br_flag  -> br_target, // Branch instructions write back br_target address to program counter
     jmp_flag -> alu_out, // Jump instructions calculate the jump address by ALU
+    // CSRs[0x305] is mtvec (trap_vector). The process on exception (syscall) is written at the
+    // trap_vector address. Note that there is no OS on this CPU.
+    (inst === ECALL) -> csr_regfile(0x305),
   ))
 
   // Connect program counter to address output. This output is connected to memory to fetch the
@@ -145,6 +150,8 @@ class Core extends Module {
       CSRRSI -> List(ALU_RS1,  OP1_IMZ,  OP2_NONE, MEN_NONE,   REN_SCALAR, WB_CSR,  CSR_S), // CSRs[csr] <- CSRs[csr] | uext(imm_z)
       CSRRC  -> List(ALU_RS1,  OP1_RS1,  OP2_NONE, MEN_NONE,   REN_SCALAR, WB_CSR,  CSR_C), // CSRs[csr] <- CSRs[csr]&~x[rs1]
       CSRRCI -> List(ALU_RS1,  OP1_IMZ,  OP2_NONE, MEN_NONE,   REN_SCALAR, WB_CSR,  CSR_C), // CSRs[csr] <- CSRs[csr]&~uext(imm_z)
+      // 2.8 Environment Call and Breakpoints
+      ECALL  -> List(ALU_NONE, OP1_NONE, OP2_NONE, MEN_NONE,   REN_NONE,   WB_NONE, CSR_E),
     ),
   )
 
@@ -205,14 +212,25 @@ class Core extends Module {
   io.dmem.wen := mem_wen // mem_wen is integer and here it is implicitly converted to bool
   io.dmem.wdata := rs2_data
 
-  // Control and Status Registers
-  val csr_regfile = Mem(4096, UInt(WORD_LEN.W))
-  val csr_addr = inst(31, 20) // I-type imm value
+  // Handle CSR instructions
+  val csr_addr = Mux(
+    csr_cmd === CSR_E,
+    // CSRs[0x342] is mcause register which describes where the ecall is executed from.
+    //    8: from use mode
+    //    9: from supervisor mode
+    //   10: from hypervisor mode
+    //   11: from machine mode
+    0x342.U(CSR_ADDR_LEN.W),
+    inst(31, 20), // I-type imm value
+  )
   val csr_rdata = csr_regfile(csr_addr) // Read CSRs[csr]
   val csr_wdata = MuxCase(0.U(WORD_LEN.W), Seq(
     (csr_cmd === CSR_W) -> op1_data, // Write
     (csr_cmd === CSR_S) -> (csr_rdata | op1_data), // Read and Set Bits
     (csr_cmd === CSR_C) -> (csr_rdata & ~op1_data), // Read and Clear Bits
+    // This CPU only implements the machine mode. 11 (machine mode) is always written to
+    // CSRs[0x342] (mcause).
+    (csr_cmd === CSR_E) -> 11.U(WORD_LEN.W),
   ))
 
   when(csr_cmd =/= CSR_NONE) {
@@ -226,7 +244,7 @@ class Core extends Module {
   // By default, write back the ALU result to register (wb_sel == WB_ALU)
   val wb_data = MuxCase(alu_out, Seq(
     (wb_sel === WB_MEM) -> io.dmem.rdata, // Loaded data from memory
-    (wb_sel === WB_PC) -> pc_next, // Jump instruction stores the next pc to x[rd]
+    (wb_sel === WB_PC) -> pc_next, // Jump instruction stores the next pc (pc+4) to x[rd]
     (wb_sel === WB_CSR) -> csr_rdata, // CSR instruction write back CSRs[csr]
   ))
   when(rf_wen === REN_SCALAR) {
