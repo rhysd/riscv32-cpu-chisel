@@ -73,28 +73,25 @@ class Core extends Module {
     inst,
     List(ALU_NONE, OP1_RS1, OP2_RS2, MEN_NONE, REN_NONE, WB_NONE),
     Array(
-      // x[rs1] + sext(imm_i)
-      LW   -> List(ALU_ADD, OP1_RS1, OP2_IMI, MEN_NONE,   REN_SCALAR, WB_MEM),
-      // x[rs1] + sext(imm_s)
-      SW   -> List(ALU_ADD, OP1_RS1, OP2_IMS, MEN_SCALAR, REN_NONE,   WB_NONE),
-      // // x[rs1] + x[rs2]
-      ADD  -> List(ALU_ADD, OP1_RS1, OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU),
-      // x[rs1] + sext(imm_i)
-      ADDI -> List(ALU_ADD, OP1_RS1, OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU),
-      // x[rs1] - x[rs2]
-      SUB  -> List(ALU_SUB, OP1_RS1, OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU),
-      // x[rs1] & x[rs2]
-      AND  -> List(ALU_AND, OP1_RS1, OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU),
-      // x[rs1] | x[rs2]
-      OR   -> List(ALU_OR,  OP1_RS1, OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU),
-      // x[rs1] ^ x[rs2]
-      XOR  -> List(ALU_XOR, OP1_RS1, OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU),
-      // x[rs1] & sext(imm_i)
-      ANDI -> List(ALU_AND, OP1_RS1, OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU),
-      // x[rs1] | sext(imm_i)
-      ORI  -> List(ALU_OR , OP1_RS1, OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU),
-      // x[rs1] ^ sext(imm_i)
-      XORI -> List(ALU_XOR, OP1_RS1, OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU),
+      // 2.6
+      LW   -> List(ALU_ADD, OP1_RS1, OP2_IMI, MEN_NONE,   REN_SCALAR, WB_MEM), // x[rs1] + sext(imm_i)
+      SW   -> List(ALU_ADD, OP1_RS1, OP2_IMS, MEN_SCALAR, REN_NONE,   WB_NONE), // x[rs1] + sext(imm_s)
+      // 2.4
+      ADD  -> List(ALU_ADD, OP1_RS1, OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] + x[rs2]
+      ADDI -> List(ALU_ADD, OP1_RS1, OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] + sext(imm_i)
+      SUB  -> List(ALU_SUB, OP1_RS1, OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] - x[rs2]
+      AND  -> List(ALU_AND, OP1_RS1, OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] & x[rs2]
+      OR   -> List(ALU_OR,  OP1_RS1, OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] | x[rs2]
+      XOR  -> List(ALU_XOR, OP1_RS1, OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] ^ x[rs2]
+      ANDI -> List(ALU_AND, OP1_RS1, OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] & sext(imm_i)
+      ORI  -> List(ALU_OR , OP1_RS1, OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] | sext(imm_i)
+      XORI -> List(ALU_XOR, OP1_RS1, OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] ^ sext(imm_i)
+      SLL  -> List(ALU_SLL, OP1_RS1, OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] << x[rs2](4,0)
+      SRL  -> List(ALU_SRL, OP1_RS1, OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] >>u x[rs2](4,0)
+      SRA  -> List(ALU_SRA, OP1_RS1, OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] >>s x[rs2](4,0)
+      SLLI -> List(ALU_SLL, OP1_RS1, OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] << imm_i_sext(4,0)
+      SRLI -> List(ALU_SRL, OP1_RS1, OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] >>u imm_i_sext(4,0)
+      SRAI -> List(ALU_SRA, OP1_RS1, OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] >>s imm_i_sext(4,0)
     ),
   )
 
@@ -121,6 +118,11 @@ class Core extends Module {
     (exe_fun === ALU_AND) -> (op1_data & op2_data),
     (exe_fun === ALU_OR)  -> (op1_data | op2_data),
     (exe_fun === ALU_XOR) -> (op1_data ^ op2_data),
+    // Note: (31, 0) is necessary because << extends bits of the result value
+    // Note: (4, 0) is necessary for I instructions (imm[4:0])
+    (exe_fun === ALU_SLL) -> (op1_data << op2_data(4, 0))(31, 0),
+    (exe_fun === ALU_SRL) -> (op1_data >> op2_data(4, 0)).asUInt(),
+    (exe_fun === ALU_SRA) -> (op1_data.asSInt() >> op2_data(4, 0)).asUInt(),
   ))
 
   /*
