@@ -91,43 +91,49 @@ class Core extends Module {
   val imm_j = Cat(inst(31), inst(19, 12), inst(20), inst(30, 21))
   val imm_j_sext = Cat(Fill(11, imm_j(19)), imm_j, 0.U(1.U)) // Set LSB to zero
 
+  // Decode imm of U-type instruction
+  val imm_u = inst(31, 12)
+  val imm_u_shifted = Cat(imm_u, Fill(12, 0.U)) // for LUI and AUIPC
+
   // Decode operand sources and memory/register write back behavior
   val List(exe_fun, op1_sel, op2_sel, mem_wen, rf_wen, wb_sel) = ListLookup(
     inst,
     List(ALU_NONE, OP1_RS1, OP2_RS2, MEN_NONE, REN_NONE, WB_NONE),
     Array(
       // 2.6 Load and Store Instructions
-      LW    -> List(ALU_ADD,  OP1_RS1, OP2_IMI, MEN_NONE,   REN_SCALAR, WB_MEM), // x[rs1] + sext(imm_i)
-      SW    -> List(ALU_ADD,  OP1_RS1, OP2_IMS, MEN_SCALAR, REN_NONE,   WB_NONE), // x[rs1] + sext(imm_s)
+      LW    -> List(ALU_ADD,  OP1_RS1,  OP2_IMI, MEN_NONE,   REN_SCALAR, WB_MEM), // x[rs1] + sext(imm_i)
+      SW    -> List(ALU_ADD,  OP1_RS1,  OP2_IMS, MEN_SCALAR, REN_NONE,   WB_NONE), // x[rs1] + sext(imm_s)
       // 2.4 Integer Computational Instructions
-      ADD   -> List(ALU_ADD,  OP1_RS1, OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] + x[rs2]
-      ADDI  -> List(ALU_ADD,  OP1_RS1, OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] + sext(imm_i)
-      SUB   -> List(ALU_SUB,  OP1_RS1, OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] - x[rs2]
-      AND   -> List(ALU_AND,  OP1_RS1, OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] & x[rs2]
-      OR    -> List(ALU_OR,   OP1_RS1, OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] | x[rs2]
-      XOR   -> List(ALU_XOR,  OP1_RS1, OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] ^ x[rs2]
-      ANDI  -> List(ALU_AND,  OP1_RS1, OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] & sext(imm_i)
-      ORI   -> List(ALU_OR ,  OP1_RS1, OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] | sext(imm_i)
-      XORI  -> List(ALU_XOR,  OP1_RS1, OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] ^ sext(imm_i)
-      SLL   -> List(ALU_SLL,  OP1_RS1, OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] << x[rs2](4,0)
-      SRL   -> List(ALU_SRL,  OP1_RS1, OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] >>u x[rs2](4,0)
-      SRA   -> List(ALU_SRA,  OP1_RS1, OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] >>s x[rs2](4,0)
-      SLLI  -> List(ALU_SLL,  OP1_RS1, OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] << imm_i_sext(4,0)
-      SRLI  -> List(ALU_SRL,  OP1_RS1, OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] >>u imm_i_sext(4,0)
-      SRAI  -> List(ALU_SRA,  OP1_RS1, OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] >>s imm_i_sext(4,0)
-      SLT   -> List(ALU_SLT,  OP1_RS1, OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] <s x[rs2]
-      SLTU  -> List(ALU_SLTU, OP1_RS1, OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] <u x[rs2]
-      SLTI  -> List(ALU_SLT,  OP1_RS1, OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] <s imm_i_sext
-      SLTIU -> List(ALU_SLTU, OP1_RS1, OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] <u imm_i_sext
+      ADD   -> List(ALU_ADD,  OP1_RS1,  OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] + x[rs2]
+      ADDI  -> List(ALU_ADD,  OP1_RS1,  OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] + sext(imm_i)
+      SUB   -> List(ALU_SUB,  OP1_RS1,  OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] - x[rs2]
+      AND   -> List(ALU_AND,  OP1_RS1,  OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] & x[rs2]
+      OR    -> List(ALU_OR,   OP1_RS1,  OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] | x[rs2]
+      XOR   -> List(ALU_XOR,  OP1_RS1,  OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] ^ x[rs2]
+      ANDI  -> List(ALU_AND,  OP1_RS1,  OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] & sext(imm_i)
+      ORI   -> List(ALU_OR ,  OP1_RS1,  OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] | sext(imm_i)
+      XORI  -> List(ALU_XOR,  OP1_RS1,  OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] ^ sext(imm_i)
+      SLL   -> List(ALU_SLL,  OP1_RS1,  OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] << x[rs2](4,0)
+      SRL   -> List(ALU_SRL,  OP1_RS1,  OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] >>u x[rs2](4,0)
+      SRA   -> List(ALU_SRA,  OP1_RS1,  OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] >>s x[rs2](4,0)
+      SLLI  -> List(ALU_SLL,  OP1_RS1,  OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] << imm_i_sext(4,0)
+      SRLI  -> List(ALU_SRL,  OP1_RS1,  OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] >>u imm_i_sext(4,0)
+      SRAI  -> List(ALU_SRA,  OP1_RS1,  OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] >>s imm_i_sext(4,0)
+      SLT   -> List(ALU_SLT,  OP1_RS1,  OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] <s x[rs2]
+      SLTU  -> List(ALU_SLTU, OP1_RS1,  OP2_RS2, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] <u x[rs2]
+      SLTI  -> List(ALU_SLT,  OP1_RS1,  OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] <s imm_i_sext
+      SLTIU -> List(ALU_SLTU, OP1_RS1,  OP2_IMI, MEN_NONE,   REN_SCALAR, WB_ALU), // x[rs1] <u imm_i_sext
+      LUI   -> List(ALU_ADD,  OP1_NONE, OP2_IMU, MEN_NONE,   REN_SCALAR, WB_ALU), // sext(imm_u[31:12] << 12)
+      AUIPC -> List(ALU_ADD,  OP1_PC,   OP2_IMU, MEN_NONE,   REN_SCALAR, WB_ALU), // PC + sext(imm_u[31:12] << 12)
       // 2.5 Control Transfer Instructions
-      BEQ   -> List(BR_BEQ,   OP1_RS1, OP2_RS2, MEN_NONE,   REN_NONE,   WB_NONE), // x[rs1] === x[rs2] then PC+sext(imm_b)
-      BNE   -> List(BR_BNE,   OP1_RS1, OP2_RS2, MEN_NONE,   REN_NONE,   WB_NONE), // x[rs1] =/= x[rs2] then PC+sext(imm_b)
-      BGE   -> List(BR_BGE,   OP1_RS1, OP2_RS2, MEN_NONE,   REN_NONE,   WB_NONE), // x[rs1] >=s x[rs2] then PC+sext(imm_b)
-      BGEU  -> List(BR_BGEU,  OP1_RS1, OP2_RS2, MEN_NONE,   REN_NONE,   WB_NONE), // x[rs1] >=u x[rs2] then PC+sext(imm_b)
-      BLT   -> List(BR_BLT,   OP1_RS1, OP2_RS2, MEN_NONE,   REN_NONE,   WB_NONE), // x[rs1] <s x[rs2]  then PC+sext(imm_b)
-      BLTU  -> List(BR_BLTU,  OP1_RS1, OP2_RS2, MEN_NONE,   REN_NONE,   WB_NONE), // x[rs1] <u x[rs2]  then PC+sext(imm_b)
-      JAL   -> List(ALU_ADD,  OP1_PC,  OP2_IMJ, MEN_NONE,   REN_SCALAR, WB_PC), // x[rd] = pc+4 and PC+sext(imm_j)
-      JALR  -> List(ALU_JALR, OP1_RS1, OP2_IMI, MEN_NONE,   REN_SCALAR, WB_PC), // x[rd] = pc+4 and (x[rs1]+sext(imm_i))&~1
+      BEQ   -> List(BR_BEQ,   OP1_RS1,  OP2_RS2, MEN_NONE,   REN_NONE,   WB_NONE), // x[rs1] === x[rs2] then PC+sext(imm_b)
+      BNE   -> List(BR_BNE,   OP1_RS1,  OP2_RS2, MEN_NONE,   REN_NONE,   WB_NONE), // x[rs1] =/= x[rs2] then PC+sext(imm_b)
+      BGE   -> List(BR_BGE,   OP1_RS1,  OP2_RS2, MEN_NONE,   REN_NONE,   WB_NONE), // x[rs1] >=s x[rs2] then PC+sext(imm_b)
+      BGEU  -> List(BR_BGEU,  OP1_RS1,  OP2_RS2, MEN_NONE,   REN_NONE,   WB_NONE), // x[rs1] >=u x[rs2] then PC+sext(imm_b)
+      BLT   -> List(BR_BLT,   OP1_RS1,  OP2_RS2, MEN_NONE,   REN_NONE,   WB_NONE), // x[rs1] <s x[rs2]  then PC+sext(imm_b)
+      BLTU  -> List(BR_BLTU,  OP1_RS1,  OP2_RS2, MEN_NONE,   REN_NONE,   WB_NONE), // x[rs1] <u x[rs2]  then PC+sext(imm_b)
+      JAL   -> List(ALU_ADD,  OP1_PC,   OP2_IMJ, MEN_NONE,   REN_SCALAR, WB_PC), // x[rd] = PC+4 and PC+sext(imm_j)
+      JALR  -> List(ALU_JALR, OP1_RS1,  OP2_IMI, MEN_NONE,   REN_SCALAR, WB_PC), // x[rd] = PC+4 and (x[rs1]+sext(imm_i))&~1
     ),
   )
 
@@ -143,6 +149,7 @@ class Core extends Module {
     (op2_sel === OP2_IMI) -> imm_i_sext,
     (op2_sel === OP2_IMS) -> imm_s_sext,
     (op2_sel === OP2_IMJ) -> imm_j_sext,
+    (op2_sel === OP2_IMU) -> imm_u_shifted, // for LUI and AUIPC
   ))
 
   /*
