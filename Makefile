@@ -5,6 +5,8 @@ ELF := $(patsubst %, target/share/riscv-tests/isa/rv32ui-p-%, $(UI_INSTS)) $(pat
 HEX := $(patsubst %, src/riscv/%.hex, $(notdir $(ELF)))
 OUT := $(patsubst %, riscv-tests-results/%.out, $(notdir $(ELF)))
 
+SRC := $(wildcard src/main/scala/*.scala)
+
 .PRECIOUS: $(HEX)
 
 test:
@@ -24,7 +26,7 @@ target/share/riscv-tests/isa:
 src/riscv/%.bin: target/share/riscv-tests/isa/%
 	riscv64-unknown-elf-objcopy -O binary $< $@
 
-riscv-tests-results/%.out: src/riscv/%.hex
+riscv-tests-results/%.out: src/riscv/%.hex $(SRC)
 	./scripts/run-riscv-tests.bash $<
 
 riscv-tests: $(OUT)
