@@ -1,6 +1,11 @@
-ELF := $(filter-out %.dump, $(wildcard target/share/riscv-tests/isa/rv32*i-p-*))
+UI_INSTS := sw lw add addi sub and andi or ori xor xori sll srl sra slli srli srai slt sltu slti sltiu beq bne blt bge bltu bgeu jal jalr lui auipc
+MI_INSTS := csr scall
+
+ELF := $(patsubst %, target/share/riscv-tests/isa/rv32ui-p-%, $(UI_INSTS)) $(patsubst %, target/share/riscv-tests/isa/rv32mi-p-%, $(MI_INSTS))
 HEX := $(patsubst %, src/riscv/%.hex, $(notdir $(ELF)))
 OUT := $(patsubst %, riscv-tests-results/%.out, $(notdir $(ELF)))
+
+.PRECIOUS: $(HEX)
 
 test:
 	sbt test
