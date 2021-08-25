@@ -14,10 +14,17 @@ This repository was imported from [chisel-template@f5f33c6](https://github.com/f
 
 ## Test
 
-How to run tests:
+ChiselTest:
 
 ```
 sbt test
+```
+
+riscv-tests:
+
+```
+make target/share/riscv-tests
+...
 ```
 
 [riscv]: https://riscv.org/
