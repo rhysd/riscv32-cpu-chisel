@@ -3,7 +3,6 @@ FROM ubuntu:18.04
 
 ENV RISCV=/opt/riscv
 ENV PATH=$RISCV/bin:$PATH
-ENV MAKEFLAGS=-j
 WORKDIR $RISCV
 
 RUN apt update && \
@@ -12,7 +11,7 @@ RUN apt update && \
 RUN git clone -b rvv-0.9.x --single-branch https://github.com/riscv/riscv-gnu-toolchain.git && \
 	cd riscv-gnu-toolchain && git checkout 5842fde8ee5bb3371643b60ed34906eff7a5fa31 && \
 	git submodule update --init --recursive
-RUN cd riscv-gnu-toolchain && mkdir build && cd build && ../configure --prefix=${RISCV} --enable-multilib && make
+RUN cd riscv-gnu-toolchain && mkdir build && cd build && ../configure --prefix=${RISCV} --enable-multilib && make -j
 
 RUN git clone -b master --single-branch https://github.com/riscv/riscv-tests && \
 	cd riscv-tests && git checkout c4217d88bce9f805a81f42e86ff56ed363931d69 && \
