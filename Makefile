@@ -18,9 +18,10 @@ target/share/riscv-tests/isa:
 src/riscv/%.bin: target/share/riscv-tests/isa/%
 	riscv64-unknown-elf-objcopy -O binary $< $@
 
-riscv-hex: $(HEX)
+riscv-tests: $(HEX)
+	sbt "testOnly cpu.RiscvTests"
 
 clean:
 	rm -f ./src/riscv/*
 
-.PHONY: test clean riscv-hex
+.PHONY: test clean riscv-tests

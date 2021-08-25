@@ -33,7 +33,7 @@ class Memory extends Module {
   // size is 8bits because PC is counted up by 4bytes.
   val mem = Mem(0x4000, UInt(8.W))
 
-  loadMemoryFromFile(mem, "src/hex/sw.hex")
+  loadMemoryFromFile(mem, "src/riscv/rv32ui-p-add.hex")
 
   io.imem.inst := Cat(
     mem(io.imem.addr + 3.U(WORD_LEN.W)),

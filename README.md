@@ -23,8 +23,7 @@ sbt test
 riscv-tests:
 
 ```
-riscv-hex
-...
+make riscv-tests
 ```
 
 [riscv]: https://riscv.org/

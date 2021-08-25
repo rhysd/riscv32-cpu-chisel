@@ -13,6 +13,9 @@ class Core extends Module {
 
     // This port signal will be `true` when a program finished
     val exit = Output(Bool())
+
+    // global pointer. it is necessary to check if test case passes in riscv-tests
+    val gp = Output(UInt(WORD_LEN.W))
   })
 
   val inst = io.imem.inst
@@ -251,11 +254,13 @@ class Core extends Module {
     regfile(wb_addr) := wb_data // Write back to the register specified by rd
   }
 
-  // For debugging.
-  // `exit` port output is `true` when the instruction is 0x00602823. It means 2nd line in sw.hex.
-  io.exit := inst === 0x00602823.U(WORD_LEN.W)
+  // `exit` port output is `true` when the instruction is 0x44.
+  // riscv-tests reaches 0x44 when the test case finishes.
+  io.exit := pc === 0x44.U(WORD_LEN.W)
+  io.gp := regfile(3)
 
   printf(p"pc:         0x${Hexadecimal(pc)}\n") // program counter
+  printf(p"gp :        ${regfile(3)}\n") // global pointer
   printf(p"inst:       0x${Hexadecimal(inst)}\n") // fetched instruction
   printf(p"rs1_addr:   $rs1_addr\n") // register1 address
   printf(p"rs2_addr:   $rs2_addr\n") // register2 address
