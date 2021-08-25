@@ -23,7 +23,7 @@ sbt test
 riscv-tests:
 
 ```
-make target/share/riscv-tests
+riscv-hex
 ...
 ```
 
