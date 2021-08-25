@@ -1,5 +1,6 @@
 ELF := $(filter-out %.dump, $(wildcard target/share/riscv-tests/isa/rv32*i-p-*))
 HEX := $(patsubst %, src/riscv/%.hex, $(notdir $(ELF)))
+OUT := $(patsubst %, riscv-tests-results/%.out, $(notdir $(ELF)))
 
 test:
 	sbt test
@@ -18,10 +19,13 @@ target/share/riscv-tests/isa:
 src/riscv/%.bin: target/share/riscv-tests/isa/%
 	riscv64-unknown-elf-objcopy -O binary $< $@
 
-riscv-tests: $(HEX)
-	sbt "testOnly cpu.RiscvTests"
+riscv-tests-results/%.out: src/riscv/%.hex
+	./scripts/run-riscv-tests.bash $<
+
+riscv-tests: $(OUT)
 
 clean:
-	rm -f ./src/riscv/*
+	rm -f ./src/riscv/*.hex ./src/riscv/*.bin
+	rm -f ./riscv-tests-results/*.out
 
 .PHONY: test clean riscv-tests

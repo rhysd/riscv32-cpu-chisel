@@ -342,3 +342,4 @@ hs_err_pid*
 
 /src/riscv/*.hex
 /src/riscv/*.bin
+/riscv-tests-results/*.out

@@ -14,16 +14,17 @@ This repository was imported from [chisel-template@f5f33c6](https://github.com/f
 
 ## Test
 
-ChiselTest:
+Run all tests in riscv-tests:
 
-```
-sbt test
-```
-
-riscv-tests:
-
-```
+```sh
 make riscv-tests
+```
+
+Run a specific test case in riscv-tests:
+
+```sh
+make ./src/riscv/rv32ui-p-addi.hex
+bash ./scripts/run-riscv-tests.bash ./src/riscv/rv32ui-p-addi.hex
 ```
 
 [riscv]: https://riscv.org/
