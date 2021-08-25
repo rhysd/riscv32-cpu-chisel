@@ -162,6 +162,7 @@ class Core extends Module {
   val op1_data = MuxCase(0.U(WORD_LEN.W), Seq(
     (op1_sel === OP1_RS1) -> rs1_data,
     (op1_sel === OP1_PC) -> pc,
+    (op1_sel === OP1_IMZ) -> imm_z_uext,
   ))
 
   // Determine 2nd operand data signal
