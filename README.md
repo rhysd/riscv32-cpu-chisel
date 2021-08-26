@@ -62,5 +62,11 @@ To run a specific test case in riscv-tests (when running [`ctest.c`](./src/c/cte
 make ./c-tests-results/ctest.out
 ```
 
+### Run tests with Docker
+
+```sh
+docker run --rm -v $(pwd):/app --workdir /app -t rhysd/riscv-cpu-chisel:latest make riscv-tests
+```
+
 [riscv]: https://riscv.org/
 [chisel]: https://www.chisel-lang.org/
