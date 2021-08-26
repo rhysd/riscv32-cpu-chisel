@@ -14,17 +14,36 @@ This repository was imported from [chisel-template@f5f33c6](https://github.com/f
 
 ## Test
 
-Run all tests in riscv-tests:
+### riscv-tests
+
+To run all tests in [riscv-tests](https://github.com/riscv/riscv-tests):
 
 ```sh
 make riscv-tests
 ```
 
-Run a specific test case in riscv-tests:
+Outputs of tests are stored in `riscv-tests-results` directory.
+
+To run a specific test case in riscv-tests (when running `rv32ui-p-addi` test case):
 
 ```sh
-make ./src/riscv/rv32ui-p-addi.hex
-bash ./scripts/run-riscv-tests.bash ./src/riscv/rv32ui-p-addi.hex
+make ./riscv-tests-results/rv32ui-p-addi.out
+```
+
+### C tests
+
+To run all tests with C sources in [`src/c`](./src/c/):
+
+```sh
+make c-tests
+```
+
+Outputs of tests are stored in `c-tests-results` directory.
+
+To run a specific test case in riscv-tests (when running [`ctest.c`](./src/c/ctest.c) test case):
+
+```sh
+make ./c-tests-results/ctest.out
 ```
 
 [riscv]: https://riscv.org/

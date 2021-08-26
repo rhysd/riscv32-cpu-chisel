@@ -28,7 +28,7 @@ src/riscv/%.bin: target/share/riscv-tests/isa/%
 	riscv64-unknown-elf-objcopy -O binary $< $@
 
 riscv-tests-results/%.out: src/riscv/%.hex $(SRC)
-	./scripts/run-riscv-tests.bash $<
+	MEMORY_HEX_FILE_PATH="$<" sbt "testOnly cpu.RiscvTests" | tee "$@"
 
 riscv-tests: $(RISCV_OUT)
 
