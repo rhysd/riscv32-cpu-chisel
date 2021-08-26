@@ -8,9 +8,25 @@ hardware with Chisel and what RISC-V architecture is.
 
 - [RISC-VとChiselで学ぶ はじめてのCPU自作](https://gihyo.jp/book/2021/978-4-297-12305-5) (Introduction to make your own CPU with RISC-V and Chisel)
 - Chisel API Document: https://www.chisel-lang.org/api/latest/chisel3/index.html
-- RISC-V Spec: https://riscv.org/technical/specifications/ (https://github.com/riscv/riscv-isa-manual/releases/download/Ratified-IMAFDQC/riscv-spec-20191213.pdf)
+- RISC-V Spec: https://riscv.org/technical/specifications/
+  - https://github.com/riscv/riscv-isa-manual/releases/download/Ratified-IMAFDQC/riscv-spec-20191213.pdf
 
 This repository was imported from [chisel-template@f5f33c6](https://github.com/freechipsproject/chisel-template/tree/f5f33c69f04a64531cbdb31581e09b95583fba91).
+
+## Install
+
+Clone this repository:
+
+```sh
+git clone --recursive https://github.com/rhysd/riscv32-cpu-chisel.git
+```
+
+And build Docker image for RISC-V GNU toolchain and Scala toolchain:
+
+```sh
+docker build . -t riscv/mycpu
+docker run -it -v $(pwd):/app riscv/mycpu
+```
 
 ## Test
 
