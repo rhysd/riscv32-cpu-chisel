@@ -16,6 +16,9 @@ class Core extends Module {
 
     // global pointer. it is necessary to check if test case passes in riscv-tests
     val gp = Output(UInt(WORD_LEN.W))
+
+    // program counter
+    val pc = Output(UInt(WORD_LEN.W))
   })
 
   val inst = io.imem.inst
@@ -257,8 +260,9 @@ class Core extends Module {
 
   // `exit` port output is `true` when the instruction is 0x44.
   // riscv-tests reaches 0x44 when the test case finishes.
-  io.exit := pc === 0x44.U(WORD_LEN.W)
+  io.exit := inst === UNIMP
   io.gp := regfile(3)
+  io.pc := pc
 
   printf(p"pc:         0x${Hexadecimal(pc)}\n") // program counter
   printf(p"gp :        ${regfile(3)}\n") // global pointer
