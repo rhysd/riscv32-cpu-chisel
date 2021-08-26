@@ -1,12 +1,13 @@
 riscv32-cpu-chisel
 ==================
+[![CI][ci-badge]][ci]
 
 [RISC-V][riscv] 32bit CPU written in [Chisel][chisel]. This project is for my learning purpose to understand how to design/implement
-hardware with Chisel and what RISC-V architecture is.
+hardware with Chisel and what RISC-V architecture is. Working in progress.
 
 ## References
 
-- [RISC-VとChiselで学ぶ はじめてのCPU自作](https://gihyo.jp/book/2021/978-4-297-12305-5) (Introduction to make your own CPU with RISC-V and Chisel)
+- RISC-VとChiselで学ぶ はじめてのCPU自作 (Introduction to making your own CPU with RISC-V and Chisel): https://gihyo.jp/book/2021/978-4-297-12305-5
 - Chisel API Document: https://www.chisel-lang.org/api/latest/chisel3/index.html
 - RISC-V Spec: https://riscv.org/technical/specifications/
   - https://github.com/riscv/riscv-isa-manual/releases/download/Ratified-IMAFDQC/riscv-spec-20191213.pdf
@@ -62,11 +63,20 @@ To run a specific test case in riscv-tests (when running [`ctest.c`](./src/c/cte
 make ./c-tests-results/ctest.out
 ```
 
-### Run tests with Docker
+### Run tests with the uploaded Docker image
+
+Run `docker run` with [the uploaded Docker image][docker].
 
 ```sh
 docker run --rm -v $(pwd):/app --workdir /app -t rhysd/riscv-cpu-chisel:latest make riscv-tests
 ```
 
+## License
+
+Distributed under [the MIT license](./LICENSE.txt).
+
+[ci-badge]: https://github.com/rhysd/riscv32-cpu-chisel/actions/workflows/ci.yaml/badge.svg
+[ci]: https://github.com/rhysd/riscv32-cpu-chisel/actions/workflows/ci.yaml
 [riscv]: https://riscv.org/
 [chisel]: https://www.chisel-lang.org/
+[docker]: https://hub.docker.com/repository/docker/rhysd/riscv-cpu-chisel
