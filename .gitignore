@@ -127,7 +127,7 @@ local.properties
 *.app
 *.i*86
 *.x86_64
-# *.hex
+*.hex
 
 # Debug files
 *.dSYM/
@@ -340,11 +340,9 @@ project/plugins/project/
 hs_err_pid*
 
 
-/src/riscv/*.hex
 /src/riscv/*.bin
 /riscv-tests-results/*.out
 /src/c/*.s
 /src/c/*.o
 /src/c/*.elf
 /src/c/*.dump
-/src/c/*.hex
