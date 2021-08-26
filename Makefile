@@ -3,7 +3,8 @@ MI_INSTS := csr scall
 
 ELF := $(patsubst %, target/share/riscv-tests/isa/rv32ui-p-%, $(UI_INSTS)) $(patsubst %, target/share/riscv-tests/isa/rv32mi-p-%, $(MI_INSTS))
 HEX := $(patsubst %, src/riscv/%.hex, $(notdir $(ELF)))
-OUT := $(patsubst %, riscv-tests-results/%.out, $(notdir $(ELF)))
+RISCV_OUT := $(patsubst %, riscv-tests-results/%.out, $(notdir $(ELF)))
+C_OUT := $(patsubst %.c, c-tests-results/%.out, $(notdir $(wildcard src/c/*.c)))
 
 SRC := $(wildcard src/main/scala/*.scala)
 
@@ -29,7 +30,7 @@ src/riscv/%.bin: target/share/riscv-tests/isa/%
 riscv-tests-results/%.out: src/riscv/%.hex $(SRC)
 	./scripts/run-riscv-tests.bash $<
 
-riscv-tests: $(OUT)
+riscv-tests: $(RISCV_OUT)
 
 src/c/%.s: src/c/%.c
 	riscv64-unknown-elf-gcc -march=rv32i -mabi=ilp32 -S -o $@ $<
@@ -40,16 +41,21 @@ src/c/%.o: src/c/%.c
 src/c/%.elf: src/c/%.o
 	riscv64-unknown-elf-ld -b elf32-littleriscv $< -T ./src/c/link.ld -o $@
 
-%.hex: %.elf
-	od -An -tx1 -w1 -v $< > $@
+%.bin: %.elf
+	riscv64-unknown-elf-objcopy -O binary $< $@
 
 %.dump: %.elf
 	riscv64-unknown-elf-objdump -b elf32-littleriscv -D $< > $@
 
+c-tests-results/%.out: src/c/%.hex
+	MEMORY_HEX_FILE_PATH="$<" sbt "testOnly cpu.CTests" | tee "$@"
+
+c-tests: $(C_OUT)
+
 clean:
 	rm -f ./src/riscv/*.hex ./src/riscv/*.bin
 	rm -f ./riscv-tests-results/*.out
-	rm -f $(CEXE)
 	rm -f ./src/c/*.elf ./src/c/*.s ./src/c/*.hex ./src/c/*.dump
+	rm -f ./c-tests-results/*.out
 
-.PHONY: test clean riscv-tests
+.PHONY: test clean riscv-tests c-tests
