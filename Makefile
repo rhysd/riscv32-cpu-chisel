@@ -31,8 +31,25 @@ riscv-tests-results/%.out: src/riscv/%.hex $(SRC)
 
 riscv-tests: $(OUT)
 
+src/c/%.s: src/c/%.c
+	riscv64-unknown-elf-gcc -march=rv32i -mabi=ilp32 -S -o $@ $<
+
+src/c/%.o: src/c/%.c
+	riscv64-unknown-elf-gcc -march=rv32i -mabi=ilp32 -c -o $@ $<
+
+src/c/%.elf: src/c/%.o
+	riscv64-unknown-elf-ld -b elf32-littleriscv $< -T ./src/c/link.ld -o $@
+
+%.hex: %.elf
+	od -An -tx1 -w1 -v $< > $@
+
+%.dump: %.elf
+	riscv64-unknown-elf-objdump -b elf32-littleriscv -D $< > $@
+
 clean:
 	rm -f ./src/riscv/*.hex ./src/riscv/*.bin
 	rm -f ./riscv-tests-results/*.out
+	rm -f $(CEXE)
+	rm -f ./src/c/*.elf ./src/c/*.s ./src/c/*.hex ./src/c/*.dump
 
 .PHONY: test clean riscv-tests
