@@ -1,0 +1,13 @@
+name: CI
+on: push
+
+jobs:
+  riscv-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+      - name: Run riscv-tests on Docker
+        run:
+          docker run --rm -v "$(pwd):/app" --workdir /app -t rhysd/riscv-cpu-chisel:latest make riscv-tests
