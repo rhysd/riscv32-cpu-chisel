@@ -22,6 +22,6 @@ class Top extends Module {
   // Connect signals inside core
   io.exit := core.io.exit
   io.gp := core.io.gp
-  io.inst := core.io.imem.inst
+  io.inst := core.io.inst
   io.pc := core.io.pc
 }
