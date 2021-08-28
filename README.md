@@ -1,5 +1,5 @@
-riscv32-cpu-chisel
-==================
+RISC-V 32bit CPU written in Chisel
+==================================
 [![CI][ci-badge]][ci]
 
 [RISC-V][riscv] 32bit CPU written in [Chisel][chisel]. This project is for my learning purpose to understand how to design/implement
@@ -11,6 +11,7 @@ hardware with Chisel and what RISC-V architecture is. Working in progress.
 - Chisel API Document: https://www.chisel-lang.org/api/latest/chisel3/index.html
 - RISC-V Spec: https://riscv.org/technical/specifications/
   - https://github.com/riscv/riscv-isa-manual/releases/download/Ratified-IMAFDQC/riscv-spec-20191213.pdf
+- Assembly Manual: https://github.com/riscv/riscv-asm-manual/blob/master/riscv-asm.md
 
 This repository was imported from [chisel-template@f5f33c6](https://github.com/freechipsproject/chisel-template/tree/f5f33c69f04a64531cbdb31581e09b95583fba91).
 
@@ -22,10 +23,15 @@ Clone this repository:
 git clone --recursive https://github.com/rhysd/riscv32-cpu-chisel.git
 ```
 
-And build Docker image for RISC-V GNU toolchain and Scala toolchain:
+Build Docker image for RISC-V GNU toolchain and Scala toolchain:
 
 ```sh
 docker build . -t riscv/mycpu
+```
+
+Start an interactive shell with mounting this repository:
+
+```sh
 docker run -it -v $(pwd):/app riscv/mycpu
 ```
 
