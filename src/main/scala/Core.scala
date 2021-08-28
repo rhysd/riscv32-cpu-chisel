@@ -159,10 +159,24 @@ class Core extends Module {
   val id_rs1_addr = id_inst(19, 15)
   val id_rs2_addr = id_inst(24, 20)
   val id_wb_addr = id_inst(11, 7) // rd
-  // When rs1 is non-zero, read the address from register map. When the address is zero, the value
-  // of register #0 must always be zero.
-  val id_rs1_data = Mux(id_rs1_addr =/= 0.U(WORD_LEN.U), regfile(id_rs1_addr), 0.U(WORD_LEN.W))
-  val id_rs2_data = Mux(id_rs2_addr =/= 0.U(WORD_LEN.U), regfile(id_rs2_addr), 0.U(WORD_LEN.W))
+  val id_rs1_data = MuxCase(regfile(id_rs1_addr), Seq(
+    // The value of register #0 is always zero
+    (id_rs1_addr === 0.U) -> 0.U(WORD_LEN.W),
+    // Forward data from MEM stage to avoid data hazard. In this case, the data is not written back
+    // to the register. To fix this, ID stage needs to wait for the data is written back (stall).
+    // To avoid the stall, directly read the data being written back to the register at MEM stage.
+    (id_rs1_addr === mem_reg_wb_addr && mem_reg_rf_wen === REN_SCALAR) -> mem_wb_data,
+    // Forward data from WB stage to avoid data hazard. The same as above.
+    (id_rs1_addr === wb_reg_wb_addr && wb_reg_rf_wen === REN_SCALAR) -> wb_reg_wb_data,
+  ))
+  val id_rs2_data = MuxCase(regfile(id_rs2_addr), Seq(
+    // The value of register #0 is always zero
+    (id_rs2_addr === 0.U) -> 0.U(WORD_LEN.W),
+    // Forward data from MEM stage to avoid data hazard. The same as RS1 above.
+    (id_rs2_addr === mem_reg_wb_addr && mem_reg_rf_wen === REN_SCALAR) -> mem_wb_data,
+    // Forward data from WB stage to avoid data hazard. The same as above.
+    (id_rs2_addr === wb_reg_wb_addr && wb_reg_rf_wen === REN_SCALAR) -> wb_reg_wb_data,
+  ))
 
   // Spec 2.6: The effective address is obtained by adding register rs1 to the sign-extended 12-bit offset.
   // sext 12bit value to 32bit value.

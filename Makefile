@@ -44,7 +44,7 @@ src/c/%.elf: src/c/%.o
 %.dump: %.elf
 	riscv64-unknown-elf-objdump -b elf32-littleriscv -D $< > $@
 
-c-tests-results/%.out: src/c/%.hex
+c-tests-results/%.out: src/c/%.hex $(SRC)
 	MEMORY_HEX_FILE_PATH="$<" sbt "testOnly cpu.CTests" | tee "$@"
 
 c-tests: $(C_OUT)
