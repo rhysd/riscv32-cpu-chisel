@@ -342,7 +342,6 @@ hs_err_pid*
 
 /src/riscv/*.bin
 /riscv-tests-results/*.out
-/src/c/*.s
 /src/c/*.o
 /src/c/*.elf
 /src/c/*.dump

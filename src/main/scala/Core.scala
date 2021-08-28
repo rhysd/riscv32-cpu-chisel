@@ -83,6 +83,8 @@ class Core extends Module {
 
   val if_inst = io.imem.inst
 
+  val stall_flag = Wire(Bool()) // True when data hazard occurs at EX stage
+
   // Uninitialized ports for branch instructions. They will be connected in EX stage
   val exe_br_flag = Wire(Bool())
   val exe_br_target = Wire(UInt(WORD_LEN.W))
@@ -99,6 +101,8 @@ class Core extends Module {
     // CSRs[0x305] is mtvec (trap_vector). The process on exception (syscall) is written at the
     // trap_vector address. Note that there is no OS on this CPU.
     (if_inst === ECALL) -> csr_regfile(0x305),
+    // Keep current pc due to stall by data hazard
+    stall_flag -> if_reg_pc,
   ))
 
   // Connect program counter to address output. This output is connected to memory to fetch the
@@ -106,7 +110,10 @@ class Core extends Module {
   io.imem.addr := if_reg_pc
 
   // Save IF states for next stage
-  id_reg_pc := if_reg_pc
+  id_reg_pc := Mux(stall_flag, id_reg_pc, if_reg_pc) // Keep current pc due to stall by data hazard
+
+  // On branch hazard:
+  //
   // Jump instructions cause pipeline branch hazard. Replace the instruction being fetched with NOP
   // not to execute it.
   //
@@ -129,11 +136,50 @@ class Core extends Module {
   //   │ (Y)  │      │      │(X->Y)│
   //   └──────┴──────┴──────┴──────┘
   //
-  id_reg_inst := Mux(exe_br_flag || exe_jmp_flag, BUBBLE, if_inst)
+  //
+  // On data hazard:
+  //
+  // To fetch the register data which is now being calculated at EX stage in IF stage, IF and ID
+  // must wait for the data being written back to the register. The data will be forwarded to IF
+  // and ID at MEM.
+  //
+  //      IF     ID     EX     MEM
+  //   ┌──────┬──────┬──────┐
+  //   │INST B│INST A│INST C│         CYCLE = C
+  //   │ (X+8)│ (X+4)│ (X)  │
+  //   └┬─────┴┬─────┴──────┘
+  //    │keep  │keep
+  //   ┌▼─────┐▼─────┬──────┬──────┐
+  //   │INST B│INST A│ NOP  │INST C│  CYCLE = C+1
+  //   │ (X+8)│ (X+4)│      │ (X)  │
+  //   └──────┴──▲───┴──────┴──┬───┘
+  //             └─────────────┘
+  //                 forward
+  //
+  id_reg_inst := MuxCase(if_inst, Seq(
+    (exe_br_flag || exe_jmp_flag) -> BUBBLE, // Prioritize branch hazard over data hazard
+    stall_flag -> id_reg_inst,
+  ))
 
   /*
    * Instruction Decode (ID)
    */
+
+  // id_rs1_addr and id_rs2_addr are not available because they are connected from id_inst and
+  // id_inst wire is connected to stall_flag wire. Separate wires are necessary.
+  val id_rs1_addr_b = id_reg_inst(19, 15)
+  val id_rs2_addr_b = id_reg_inst(24, 20)
+
+  // stall_flag outputs true signal when data hazard occurs in RS1 or RS2 at EX stage.
+  stall_flag := (
+    exe_reg_rf_wen === REN_SCALAR &&
+    id_rs1_addr_b =/= 0.U &&
+    id_rs1_addr_b === exe_reg_wb_addr
+  ) || (
+    exe_reg_rf_wen === REN_SCALAR &&
+    id_rs2_addr_b =/= 0.U &&
+    id_rs2_addr_b === exe_reg_wb_addr
+  )
 
   // Spec 2.2 Base Instruction Formats
   //
@@ -154,11 +200,13 @@ class Core extends Module {
 
   // Jump instructions cause pipeline branch hazard. Replace the instruction being fetched with NOP
   // not to execute it.
-  val id_inst = Mux(exe_br_flag || exe_jmp_flag, BUBBLE, id_reg_inst)
+  val id_inst = Mux(exe_br_flag || exe_jmp_flag || stall_flag, BUBBLE, id_reg_inst)
 
   val id_rs1_addr = id_inst(19, 15)
   val id_rs2_addr = id_inst(24, 20)
   val id_wb_addr = id_inst(11, 7) // rd
+
+  val mem_wb_data = Wire(UInt(WORD_LEN.W)) // Declare wire here for forwarding (p.200)
   val id_rs1_data = MuxCase(regfile(id_rs1_addr), Seq(
     // The value of register #0 is always zero
     (id_rs1_addr === 0.U) -> 0.U(WORD_LEN.W),
@@ -374,7 +422,7 @@ class Core extends Module {
   }
 
   // By default, write back the ALU result to register (wb_sel == WB_ALU)
-  val mem_wb_data = MuxCase(mem_reg_alu_out, Seq(
+  mem_wb_data := MuxCase(mem_reg_alu_out, Seq(
     (mem_reg_wb_sel === WB_MEM) -> io.dmem.rdata, // Loaded data from memory
     (mem_reg_wb_sel === WB_PC) -> (mem_reg_pc + 4.U(WORD_LEN.W)), // Jump instruction stores the next pc (pc+4) to x[rd]
     (mem_reg_wb_sel === WB_CSR) -> csr_rdata, // CSR instruction write back CSRs[csr]
@@ -401,7 +449,7 @@ class Core extends Module {
   io.inst := id_inst
 
   printf(p"if:   pc=0x${Hexadecimal(if_reg_pc)}\n")
-  printf(p"id:   pc=0x${Hexadecimal(id_reg_pc)} inst=0x${Hexadecimal(id_inst)} rs1=${id_rs1_addr} rs2=${id_rs2_addr}\n")
+  printf(p"id:   pc=0x${Hexadecimal(id_reg_pc)} inst=0x${Hexadecimal(id_inst)} rs1=${id_rs1_data} rs2=${id_rs2_data} stall=${stall_flag}\n")
   printf(p"exe:  pc=0x${Hexadecimal(exe_reg_pc)} wb_addr=${exe_reg_wb_addr} op1=0x${Hexadecimal(exe_reg_op1_data)} op2=0x${Hexadecimal(exe_reg_op2_data)} alu_out=0x${Hexadecimal(exe_alu_out)}\n")
   printf(p"mem:  pc=0x${Hexadecimal(mem_reg_pc)} wb_data=0x${Hexadecimal(mem_wb_data)}\n")
   printf(p"wb:   wb_data=0x${Hexadecimal(wb_reg_wb_data)}\n")
