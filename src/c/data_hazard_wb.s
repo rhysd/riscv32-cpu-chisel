@@ -1,5 +1,5 @@
-; GCC did not emit expected code when compiling sample code at p.203
-; Instead I hand-assemble the code here
+# GCC did not emit expected code when compiling sample code at p.203
+# Instead I hand-assemble the code here
 	.file	"data_hazard_wb.c"
 	.option nopic
 	.option checkconstraints
