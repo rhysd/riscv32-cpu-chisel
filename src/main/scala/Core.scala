@@ -107,7 +107,29 @@ class Core extends Module {
 
   // Save IF states for next stage
   id_reg_pc := if_reg_pc
-  id_reg_inst := if_inst
+  // Jump instructions cause pipeline branch hazard. Replace the instruction being fetched with NOP
+  // not to execute it.
+  //
+  //      IF     ID     EX     MEM
+  //   ┌──────┬──────┐
+  //   │INST A│ JUMP │
+  //   │ (X+4)│ (X)  │
+  //   └──────┴──────┘
+  //   ┌──────┬──────┬──────┐
+  //   │INST B│INST A│JUMP X│
+  //   │ (X+8)│ (X+4)│(X->Y)│
+  //   └──┬───┴──┬───┴──────┘
+  //      ▼      ▼
+  //   ┌──────┬──────┬──────┐
+  //   │ NOP  │ NOP  │JUMP X│
+  //   │      │      │(X->Y)│
+  //   └──────┴──────┴──────┘
+  //   ┌──────┬──────┬──────┬──────┐
+  //   │INST P│ NOP  │ NOP  │JUMP X│
+  //   │ (Y)  │      │      │(X->Y)│
+  //   └──────┴──────┴──────┴──────┘
+  //
+  id_reg_inst := Mux(exe_br_flag || exe_jmp_flag, BUBBLE, if_inst)
 
   /*
    * Instruction Decode (ID)
@@ -130,9 +152,13 @@ class Core extends Module {
   // |imm[20]|         imm[10:1]          |imm[11]|      imm[19:12]       |       rd        |   opcode    | J-type
   //  ----------------------------------------------------------------------------------------------------
 
-  val id_rs1_addr = id_reg_inst(19, 15)
-  val id_rs2_addr = id_reg_inst(24, 20)
-  val id_wb_addr = id_reg_inst(11, 7) // rd
+  // Jump instructions cause pipeline branch hazard. Replace the instruction being fetched with NOP
+  // not to execute it.
+  val id_inst = Mux(exe_br_flag || exe_jmp_flag, BUBBLE, id_reg_inst)
+
+  val id_rs1_addr = id_inst(19, 15)
+  val id_rs2_addr = id_inst(24, 20)
+  val id_wb_addr = id_inst(11, 7) // rd
   // When rs1 is non-zero, read the address from register map. When the address is zero, the value
   // of register #0 must always be zero.
   val id_rs1_data = Mux(id_rs1_addr =/= 0.U(WORD_LEN.U), regfile(id_rs1_addr), 0.U(WORD_LEN.W))
@@ -140,33 +166,33 @@ class Core extends Module {
 
   // Spec 2.6: The effective address is obtained by adding register rs1 to the sign-extended 12-bit offset.
   // sext 12bit value to 32bit value.
-  val id_imm_i = id_reg_inst(31, 20) // imm for I-type
+  val id_imm_i = id_inst(31, 20) // imm for I-type
   val id_imm_i_sext = Cat(Fill(20, id_imm_i(11)), id_imm_i)
-  val id_imm_s = Cat(id_reg_inst(31, 25), id_reg_inst(11, 7)) // imm for S-type
+  val id_imm_s = Cat(id_inst(31, 25), id_inst(11, 7)) // imm for S-type
   val id_imm_s_sext = Cat(Fill(20, id_imm_s(11)), id_imm_s)
 
   // Decode imm of B-type instruction
-  val id_imm_b = Cat(id_reg_inst(31), id_reg_inst(7), id_reg_inst(30, 25), id_reg_inst(11, 8))
+  val id_imm_b = Cat(id_inst(31), id_inst(7), id_inst(30, 25), id_inst(11, 8))
   // imm[0] does not exist in B-type instruction. This is because the first bit of program counter
   // is always zero (p.126). Size of instruction is 32bit or 16bit, so instruction pointer (pc)
   // address always points an even address.
   val id_imm_b_sext = Cat(Fill(19, id_imm_b(11)), id_imm_b, 0.U(1.U))
 
   // Decode imm of J-type instruction
-  val id_imm_j = Cat(id_reg_inst(31), id_reg_inst(19, 12), id_reg_inst(20), id_reg_inst(30, 21))
+  val id_imm_j = Cat(id_inst(31), id_inst(19, 12), id_inst(20), id_inst(30, 21))
   val id_imm_j_sext = Cat(Fill(11, id_imm_j(19)), id_imm_j, 0.U(1.U)) // Set LSB to zero
 
   // Decode imm of U-type instruction
-  val id_imm_u = id_reg_inst(31, 12)
+  val id_imm_u = id_inst(31, 12)
   val id_imm_u_shifted = Cat(id_imm_u, Fill(12, 0.U)) // for LUI and AUIPC
 
   // Decode imm of I-type instruction
-  val id_imm_z = id_reg_inst(19, 15)
+  val id_imm_z = id_inst(19, 15)
   val id_imm_z_uext = Cat(Fill(27, 0.U), id_imm_z) // for CSR instructions
 
   // Decode operand sources and memory/register write back behavior
   val List(id_exe_fun, id_op1_sel, id_op2_sel, id_mem_wen, id_rf_wen, id_wb_sel, id_csr_cmd) = ListLookup(
-    id_reg_inst,
+    id_inst,
     List(ALU_NONE, OP1_RS1, OP2_RS2, MEN_NONE, REN_NONE, WB_NONE, CSR_NONE),
     Array(
       // 2.6 Load and Store Instructions
@@ -240,7 +266,7 @@ class Core extends Module {
     //   10: from hypervisor mode
     //   11: from machine mode
     0x342.U(CSR_ADDR_LEN.W),
-    id_reg_inst(31, 20), // I-type imm value
+    id_inst(31, 20), // I-type imm value
   )
 
   // Save ID states for next stage
@@ -355,13 +381,13 @@ class Core extends Module {
 
   // `exit` port output is `true` when the instruction is 0x44.
   // riscv-tests reaches 0x44 when the test case finishes.
-  io.exit := id_reg_inst === UNIMP
+  io.exit := id_inst === UNIMP
   io.gp := regfile(3)
   io.pc := mem_reg_pc
-  io.inst := id_reg_inst
+  io.inst := id_inst
 
   printf(p"if:   pc=0x${Hexadecimal(if_reg_pc)}\n")
-  printf(p"id:   pc=0x${Hexadecimal(id_reg_pc)} inst=0x${Hexadecimal(id_reg_inst)} rs1=${id_rs1_addr} rs2=${id_rs2_addr}\n")
+  printf(p"id:   pc=0x${Hexadecimal(id_reg_pc)} inst=0x${Hexadecimal(id_inst)} rs1=${id_rs1_addr} rs2=${id_rs2_addr}\n")
   printf(p"exe:  pc=0x${Hexadecimal(exe_reg_pc)} wb_addr=${exe_reg_wb_addr} op1=0x${Hexadecimal(exe_reg_op1_data)} op2=0x${Hexadecimal(exe_reg_op2_data)} alu_out=0x${Hexadecimal(exe_alu_out)}\n")
   printf(p"mem:  pc=0x${Hexadecimal(mem_reg_pc)} wb_data=0x${Hexadecimal(mem_wb_data)}\n")
   printf(p"wb:   wb_data=0x${Hexadecimal(wb_reg_wb_data)}\n")
