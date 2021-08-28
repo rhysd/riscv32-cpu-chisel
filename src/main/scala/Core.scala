@@ -112,20 +112,20 @@ class Core extends Module {
   //
   //      IF     ID     EX     MEM
   //   ┌──────┬──────┐
-  //   │INST A│ JUMP │
+  //   │INST A│ JUMP │                CYCLE = C
   //   │ (X+4)│ (X)  │
   //   └──────┴──────┘
   //   ┌──────┬──────┬──────┐
-  //   │INST B│INST A│JUMP X│
+  //   │INST B│INST A│JUMP X│         CYCLE = C+1
   //   │ (X+8)│ (X+4)│(X->Y)│
   //   └──┬───┴──┬───┴──────┘
   //      ▼      ▼
   //   ┌──────┬──────┬──────┐
-  //   │ NOP  │ NOP  │JUMP X│
+  //   │ NOP  │ NOP  │JUMP X│         CYCLE = C+1
   //   │      │      │(X->Y)│
   //   └──────┴──────┴──────┘
   //   ┌──────┬──────┬──────┬──────┐
-  //   │INST P│ NOP  │ NOP  │JUMP X│
+  //   │INST P│ NOP  │ NOP  │JUMP X│  CYCLE = C+2
   //   │ (Y)  │      │      │(X->Y)│
   //   └──────┴──────┴──────┴──────┘
   //

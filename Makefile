@@ -10,9 +10,6 @@ SRC := $(wildcard src/main/scala/*.scala)
 
 .PRECIOUS: $(HEX)
 
-test:
-	sbt test
-
 target/share/riscv-tests/isa/%:
 	cd ./riscv-tests && \
 	patch -p1 < ../patch/start_addr.patch && \
@@ -51,6 +48,8 @@ c-tests-results/%.out: src/c/%.hex
 	MEMORY_HEX_FILE_PATH="$<" sbt "testOnly cpu.CTests" | tee "$@"
 
 c-tests: $(C_OUT)
+
+test: c-tests riscv-tests
 
 clean:
 	rm -f ./src/riscv/*.hex ./src/riscv/*.bin
