@@ -7,7 +7,7 @@ RISCV_OUT := $(patsubst %, riscv-tests-results/%.out, $(notdir $(ELF)))
 C_OUT := $(patsubst %.c, c-tests-results/%.out, $(notdir $(wildcard src/c/*.c)))
 S_OUT := $(patsubst %.s, c-tests-results/%.out, $(notdir $(wildcard src/c/*.s)))
 
-SRC := $(wildcard src/main/scala/*.scala)
+SRC := $(wildcard src/main/scala/*.scala src/test/scala/*.scala)
 
 .PRECIOUS: $(HEX)
 
@@ -39,7 +39,7 @@ src/c/%.o: src/c/%.c
 src/c/%.s: src/c/%.c
 	riscv64-unknown-elf-gcc -march=rv32i -mabi=ilp32 -S -o $@ $<
 
-src/c/%.elf: src/c/%.o
+src/c/%.elf: src/c/%.o src/c/link.ld
 	riscv64-unknown-elf-ld -b elf32-littleriscv $< -T ./src/c/link.ld -o $@
 
 %.bin: %.elf
