@@ -7,7 +7,9 @@ RISCV_OUT := $(patsubst %, riscv-tests-results/%.out, $(notdir $(ELF)))
 C_OUT := $(patsubst %.c, c-tests-results/%.out, $(notdir $(wildcard src/c/*.c)))
 S_OUT := $(patsubst %.s, c-tests-results/%.out, $(notdir $(wildcard src/c/*.s)))
 
-SRC := $(wildcard src/main/scala/*.scala src/test/scala/*.scala)
+SRC := $(wildcard src/main/scala/*.scala)
+TEST := $(wildcard src/test/scala/*.scala)
+VERILOG_SRC := verilog/Top.v verilog/Top.Memory.mem.v
 
 .PRECIOUS: $(HEX)
 
@@ -25,7 +27,7 @@ target/share/riscv-tests/isa/%:
 src/riscv/%.bin: target/share/riscv-tests/isa/%
 	riscv64-unknown-elf-objcopy -O binary $< $@
 
-riscv-tests-results/%.out: src/riscv/%.hex $(SRC)
+riscv-tests-results/%.out: src/riscv/%.hex $(SRC) $(TEST)
 	MEMORY_HEX_FILE_PATH="$<" sbt "testOnly cpu.RiscvTests" | tee "$@"
 
 riscv-tests: $(RISCV_OUT)
@@ -48,12 +50,17 @@ src/c/%.elf: src/c/%.o src/c/link.ld
 %.dump: %.elf
 	riscv64-unknown-elf-objdump -b elf32-littleriscv -D $< > $@
 
-c-tests-results/%.out: src/c/%.hex $(SRC)
+c-tests-results/%.out: src/c/%.hex $(SRC) $(TEST)
 	MEMORY_HEX_FILE_PATH="$<" sbt "testOnly cpu.CTests" | tee "$@"
 
 c-tests: $(C_OUT) $(S_OUT)
 
 test: c-tests riscv-tests
+
+$(VERILOG_SRC): $(SRC)
+	MEMORY_HEX_FILE_PATH="$(MEMORY_HEX_FILE_PATH)" sbt 'run --target-dir ./verilog'
+
+verilog: $(VERILOG_SRC)
 
 clean:
 	rm -f ./src/riscv/*.hex ./src/riscv/*.bin
@@ -61,4 +68,4 @@ clean:
 	rm -f ./src/c/*.elf ./src/c/*.hex ./src/c/*.dump
 	rm -f ./c-tests-results/*.out
 
-.PHONY: test clean riscv-tests c-tests
+.PHONY: test clean riscv-tests c-tests verilog

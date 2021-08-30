@@ -35,6 +35,16 @@ Start an interactive shell with mounting this repository:
 docker run -it -v $(pwd):/app riscv/mycpu
 ```
 
+## Generate Verilog sources
+
+Verilog sources can be generated from Chisel sources via `sbt run`:
+
+```sh
+make ./src/c/ctest.hex # Make hex dump of memory image of program to run
+make verilog MEMORY_HEX_FILE_PATH=./src/c/ctest.hex # Generate Verilog sources
+cat ./verilog/Top.v
+```
+
 ## Test
 
 ### riscv-tests

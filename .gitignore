@@ -345,3 +345,5 @@ hs_err_pid*
 /src/c/*.o
 /src/c/*.elf
 /src/c/*.dump
+/verilog/*
+/verilog/!.gitkeep
