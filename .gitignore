@@ -340,10 +340,9 @@ project/plugins/project/
 hs_err_pid*
 
 
-/src/riscv/*.bin
 /riscv-tests-results/*.out
-/src/c/*.o
-/src/c/*.elf
-/src/c/*.dump
+/c/*.o
+/c/*.elf
+/c/*.dump
 /verilog/*
 /verilog/!.gitkeep
