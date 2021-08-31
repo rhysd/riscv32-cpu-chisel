@@ -19,7 +19,8 @@ int main() {
     asm volatile("nop");
     asm volatile("nop");
     asm volatile("nop");
-    asm volatile("unimp");
 
+    // Restore return address
+    asm volatile("li ra, 4");
     return 0;
 }

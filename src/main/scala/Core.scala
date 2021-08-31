@@ -380,7 +380,7 @@ class ExecuteStage {
     reg_imm_z_uext := prev.reg_imm_z_uext
     reg_mem_wen    := prev.reg_mem_wen
 
-    printf(p"EX: pc=0x${Hexadecimal(prev.reg_pc)} wb_addr=${prev.reg_wb_addr} op1=0x${Hexadecimal(prev.reg_op1_data)} op2=0x${Hexadecimal(prev.reg_op2_data)} alu_out=0x${Hexadecimal(alu_out)}\n")
+    printf(p"EX: pc=0x${Hexadecimal(prev.reg_pc)} wb_addr=${prev.reg_wb_addr} op1=0x${Hexadecimal(prev.reg_op1_data)} op2=0x${Hexadecimal(prev.reg_op2_data)} alu_out=0x${Hexadecimal(alu_out)} jmp=${jmp_flag}\n")
   }
 }
 
@@ -469,9 +469,28 @@ class Core extends Module {
   mem.connect(io.dmem, execute, decode, csr_regfile)
   wb.connect(mem, regfile)
 
-  // `exit` port output is `true` when the instruction is 0x44.
-  // riscv-tests reaches 0x44 when the test case finishes.
-  io.exit := decode.inst === UNIMP
+  // We can know that a program is exiting when it is jumping to the current address. This never
+  // happens in C source since C does not allow an infinite loop without any side effect. The
+  // infinite loop is put in start.s.
+  //
+  //    00000008 <_loop>:
+  //       8:   0000006f                j       8 <_loop>
+  //
+  // This seems a normal way to represent a program exits. GCC generates a similar code in _exit
+  // function (eventually called when a program exists).
+  //
+  // 0000000000010402 <_exit>:
+  //    ...
+  //    10410:       00000073                ecall
+  //    10414:       00054363                bltz    a0,1041a <_exit+0x18>
+  //    10418:       a001                    j       10418 <_exit+0x16>
+  //    ...
+  //    10426:       008000ef                jal     ra,1042e <__errno>
+  //    1042a:       c100                    sw      s0,0(a0)
+  //    1042c:       a001                    j       1042c <_exit+0x2a>
+  //
+  io.exit := execute.jmp_flag && (decode.reg_pc === execute.alu_out)
+
   io.gp := regfile(3)
   io.pc := execute.reg_pc
   io.inst := decode.inst

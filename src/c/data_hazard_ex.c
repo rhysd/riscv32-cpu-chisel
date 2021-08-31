@@ -8,6 +8,5 @@ int main() {
     asm volatile("nop");
     asm volatile("nop");
 
-    asm volatile("unimp");
     return 0;
 }

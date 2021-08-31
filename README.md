@@ -12,6 +12,8 @@ hardware with Chisel and what RISC-V architecture is. Working in progress.
 - RISC-V Spec: https://riscv.org/technical/specifications/
   - https://github.com/riscv/riscv-isa-manual/releases/download/Ratified-IMAFDQC/riscv-spec-20191213.pdf
 - Assembly Manual: https://github.com/riscv/riscv-asm-manual/blob/master/riscv-asm.md
+- Reference simulator: https://github.com/riscv/riscv-isa-sim
+- Proxy kernel: https://github.com/riscv/riscv-pk
 
 This repository was imported from [chisel-template@f5f33c6](https://github.com/freechipsproject/chisel-template/tree/f5f33c69f04a64531cbdb31581e09b95583fba91).
 

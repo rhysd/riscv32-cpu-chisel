@@ -41,8 +41,8 @@ src/c/%.o: src/c/%.c
 src/c/%.s: src/c/%.c
 	riscv64-unknown-elf-gcc -march=rv32i -mabi=ilp32 -S -o $@ $<
 
-src/c/%.elf: src/c/%.o src/c/link.ld
-	riscv64-unknown-elf-ld -b elf32-littleriscv $< -T ./src/c/link.ld -o $@
+src/c/%.elf: src/c/%.o src/c/start.o src/c/link.ld
+	riscv64-unknown-elf-ld -b elf32-littleriscv $< -T ./src/c/link.ld -o $@ ./src/c/start.o
 
 %.bin: %.elf
 	riscv64-unknown-elf-objcopy -O binary $< $@

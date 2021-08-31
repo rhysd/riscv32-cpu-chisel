@@ -7,6 +7,5 @@ int main() {
     } else {
         z = z + 2;
     }
-    asm volatile("unimp");
     return 0;
 }

@@ -10,7 +10,7 @@ class CTests extends FlatSpec with ChiselScalatestTester {
   it should "work though hex" in {
     test(new Top) { c =>
       // c is an instance of Top
-      while (c.io.inst.peek().litValue != UNIMP.litValue) {
+      while (!c.io.exit.peek().litToBoolean) {
         c.clock.step(1)
       }
     }
