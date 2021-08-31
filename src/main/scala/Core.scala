@@ -449,7 +449,6 @@ class Core extends Module {
     val exit = Output(Bool())
     val gp = Output(UInt(WORD_LEN.W)) // for riscv-tests
     val pc = Output(UInt(WORD_LEN.W)) // for riscv-tests
-    val inst = Output(UInt(WORD_LEN.W)) // for c-tests
   })
 
   // RISC-V has 32 registers. Size is 32bits (32bits * 32regs).
@@ -493,7 +492,6 @@ class Core extends Module {
 
   io.gp := regfile(3)
   io.pc := execute.reg_pc
-  io.inst := decode.inst
 
   printf(p"dmem: addr=${io.dmem.addr} wen=${io.dmem.wen} wdata=0x${Hexadecimal(io.dmem.wdata)}\n") // memory address loaded by LW
   printf("----------------\n")

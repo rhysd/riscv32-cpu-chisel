@@ -8,7 +8,6 @@ class Top extends Module {
   val io = IO(new Bundle {
     val exit = Output(Bool())
     val gp = Output(UInt(WORD_LEN.W))
-    val inst = Output(UInt(WORD_LEN.W))
     val pc = Output(UInt(WORD_LEN.W))
   })
 
@@ -22,6 +21,5 @@ class Top extends Module {
   // Connect signals inside core
   io.exit := core.io.exit
   io.gp := core.io.gp
-  io.inst := core.io.inst
   io.pc := core.io.pc
 }
