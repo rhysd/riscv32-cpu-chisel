@@ -5,7 +5,7 @@ ELF := $(patsubst %, target/share/riscv-tests/isa/rv32ui-p-%, $(UI_INSTS)) $(pat
 HEX := $(patsubst %, src/riscv/%.hex, $(notdir $(ELF)))
 RISCV_OUT := $(patsubst %, riscv-tests-results/%.out, $(notdir $(ELF)))
 C_OUT := $(patsubst %.c, c-tests-results/%.out, $(notdir $(wildcard src/c/*.c)))
-S_OUT := $(patsubst %.s, c-tests-results/%.out, $(notdir $(wildcard src/c/*.s)))
+S_OUT := $(patsubst %.s, c-tests-results/%.out, $(filter-out start.s, $(notdir $(wildcard src/c/*.s))))
 
 SRC := $(wildcard src/main/scala/*.scala)
 TEST := $(wildcard src/test/scala/*.scala)
