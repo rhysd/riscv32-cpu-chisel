@@ -1,16 +1,16 @@
 UI_INSTS := sw lw add addi sub and andi or ori xor xori sll srl sra slli srli srai slt sltu slti sltiu beq bne blt bge bltu bgeu jal jalr lui auipc
 MI_INSTS := csr scall
 
-RISCV_ELF := $(patsubst %, target/share/riscv-tests/isa/rv32ui-p-%, $(UI_INSTS)) $(patsubst %, target/share/riscv-tests/isa/rv32mi-p-%, $(MI_INSTS))
-RISCV_HEX := $(patsubst %, %.hex, $(RISCV_ELF))
-RISCV_OUT := $(patsubst %.hex, riscv-tests-results/%.out, $(notdir $(RISCV_HEX)))
-C_HEX := $(patsubst %.c, %.hex, $(wildcard c/*.c)) $(patsubst %.s, %.hex, $(filter-out c/crt0.s, $(wildcard c/*.s)))
-C_OUT := $(patsubst %.hex, c-tests-results/%.out, $(notdir $(C_HEX)))
+RISCV_ELF := $(patsubst %,target/share/riscv-tests/isa/rv32ui-p-%,$(UI_INSTS)) $(patsubst %,target/share/riscv-tests/isa/rv32mi-p-%,$(MI_INSTS))
+RISCV_HEX := $(patsubst %,riscv-tests-results/%.hex,$(notdir $(RISCV_ELF)))
+RISCV_OUT := $(patsubst %.hex,%.out,$(RISCV_HEX))
+C_HEX := $(patsubst %.c,%.hex,$(wildcard c/*.c)) $(patsubst %.s,%.hex,$(filter-out c/crt0.s,$(wildcard c/*.s)))
+C_OUT := $(patsubst %.hex,c-tests-results/%.out,$(notdir $(C_HEX)))
 
 SRC := $(wildcard src/main/scala/*.scala)
 VERILOG_SRC := verilog/Top.v verilog/Top.Memory.mem.v
 
-target/share/riscv-tests/isa/%:
+target/share/riscv-tests:
 	cd ./riscv-tests && \
 	patch -p1 < ../patch/start_addr.patch && \
 	autoconf && \
@@ -21,8 +21,8 @@ target/share/riscv-tests/isa/%:
 %.hex: %.bin
 	od -An -tx1 -w1 -v $< > $@
 
-riscv-tests-results/%.bin: target/share/riscv-tests/isa/%
-	riscv64-unknown-elf-objcopy -O binary $< $@
+riscv-tests-results/%.bin: target/share/riscv-tests
+	riscv64-unknown-elf-objcopy -O binary target/share/riscv-tests/isa/$(basename $(notdir $@)) $@
 
 riscv-tests-results/%.out: riscv-tests-results/%.hex $(SRC) src/test/scala/RiscvTests.scala
 	sbt "testOnly cpu.RiscvTests -- -z $<" | tee "$@"
@@ -52,7 +52,9 @@ c-tests-results/%.out: c/%.hex $(SRC) src/test/scala/CTests.scala
 
 c-tests: $(C_OUT)
 
-test: c-tests riscv-tests
+# Use `cat` not to connect output to tty. This prevents sbt shows prompt line on each stdout output line on CI.
+ci: $(RISCV_HEX) $(C_HEX)
+	sbt test | cat
 
 $(VERILOG_SRC): $(SRC)
 	sbt "run --target-dir ./verilog --memoryHexFile $(MEMORY_HEX_FILE_PATH)"
@@ -65,4 +67,4 @@ clean:
 	rm -f ./c-tests-results/*.out
 	rm -f ./verilog/*.v ./verilog/*.json ./verilog/*.f ./verilog/*.fir
 
-.PHONY: test clean riscv-tests c-tests verilog ci
+.PHONY: clean riscv-tests c-tests verilog ci

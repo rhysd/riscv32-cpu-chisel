@@ -10,4 +10,4 @@ jobs:
           submodules: recursive
       - name: Run riscv-tests and c-tests on Docker
         run:
-          docker run --rm -v "$(pwd):/app" --workdir /app -t rhysd/riscv-cpu-chisel:latest make test
+          docker run --rm -v "$(pwd):/app" --workdir /app -t rhysd/riscv-cpu-chisel:latest make ci
