@@ -1,10 +1,11 @@
 UI_INSTS := sw lw add addi sub and andi or ori xor xori sll srl sra slli srli srai slt sltu slti sltiu beq bne blt bge bltu bgeu jal jalr lui auipc
 MI_INSTS := csr scall
 
-ELF := $(patsubst %, target/share/riscv-tests/isa/rv32ui-p-%, $(UI_INSTS)) $(patsubst %, target/share/riscv-tests/isa/rv32mi-p-%, $(MI_INSTS))
-RISCV_OUT := $(patsubst %, riscv-tests-results/%.out, $(notdir $(ELF)))
-C_OUT := $(patsubst %.c, c-tests-results/%.out, $(notdir $(wildcard c/*.c)))
-S_OUT := $(patsubst %.s, c-tests-results/%.out, $(filter-out crt0.s, $(notdir $(wildcard c/*.s))))
+RISCV_ELF := $(patsubst %, target/share/riscv-tests/isa/rv32ui-p-%, $(UI_INSTS)) $(patsubst %, target/share/riscv-tests/isa/rv32mi-p-%, $(MI_INSTS))
+RISCV_HEX := $(patsubst %, %.hex, $(RISCV_ELF))
+RISCV_OUT := $(patsubst %.hex, riscv-tests-results/%.out, $(notdir $(RISCV_HEX)))
+C_HEX := $(patsubst %.c, %.hex, $(wildcard c/*.c)) $(patsubst %.s, %.hex, $(filter-out c/crt0.s, $(wildcard c/*.s)))
+C_OUT := $(patsubst %.hex, c-tests-results/%.out, $(notdir $(C_HEX)))
 
 SRC := $(wildcard src/main/scala/*.scala)
 VERILOG_SRC := verilog/Top.v verilog/Top.Memory.mem.v
@@ -24,7 +25,7 @@ riscv-tests-results/%.bin: target/share/riscv-tests/isa/%
 	riscv64-unknown-elf-objcopy -O binary $< $@
 
 riscv-tests-results/%.out: riscv-tests-results/%.hex $(SRC) src/test/scala/RiscvTests.scala
-	MEMORY_HEX_FILE_PATH="$<" sbt "testOnly cpu.RiscvTests" | tee "$@"
+	sbt "testOnly cpu.RiscvTests -- -z $<" | tee "$@"
 
 riscv-tests: $(RISCV_OUT)
 
@@ -47,14 +48,14 @@ c/%.elf: c/%.o c/crt0.o c/link.ld
 	riscv64-unknown-elf-objdump -b elf32-littleriscv -D $< > $@
 
 c-tests-results/%.out: c/%.hex $(SRC) src/test/scala/CTests.scala
-	MEMORY_HEX_FILE_PATH="$<" sbt "testOnly cpu.CTests" | tee "$@"
+	sbt "testOnly cpu.CTests -- -z $<" | tee "$@"
 
-c-tests: $(C_OUT) $(S_OUT)
+c-tests: $(C_OUT)
 
 test: c-tests riscv-tests
 
 $(VERILOG_SRC): $(SRC)
-	MEMORY_HEX_FILE_PATH="$(MEMORY_HEX_FILE_PATH)" sbt 'run --target-dir ./verilog'
+	sbt "run --target-dir ./verilog --memoryHexFile $(MEMORY_HEX_FILE_PATH)"
 
 verilog: $(VERILOG_SRC)
 
@@ -62,5 +63,6 @@ clean:
 	rm -f ./riscv-tests-results/*.out ./riscv-tests-results/*.hex ./riscv-tests-results/*.bin
 	rm -f ./c/*.elf ./c/*.hex ./c/*.dump
 	rm -f ./c-tests-results/*.out
+	rm -f ./verilog/*.v ./verilog/*.json ./verilog/*.f ./verilog/*.fir
 
-.PHONY: test clean riscv-tests c-tests verilog
+.PHONY: test clean riscv-tests c-tests verilog ci

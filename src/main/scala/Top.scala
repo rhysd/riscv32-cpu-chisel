@@ -4,7 +4,7 @@ import chisel3._
 import chisel3.util._
 import Consts._
 
-class Top extends Module {
+class Top(hexMemoryPath: String) extends Module {
   val io = IO(new Bundle {
     val exit = Output(Bool())
     val gp = Output(UInt(WORD_LEN.W))
@@ -12,7 +12,7 @@ class Top extends Module {
   })
 
   val core = Module(new Core())
-  val memory = Module(new Memory())
+  val memory = Module(new Memory(hexMemoryPath))
 
   // Connect ports between core and memory
   core.io.imem <> memory.io.imem

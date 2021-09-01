@@ -23,7 +23,7 @@ class DmemPortIo extends Bundle {
 
 // Group input/output between CPU core and memory (p.92)
 // 'D' stands for 'data'.
-class Memory extends Module {
+class Memory(hexMemoryPath: String) extends Module {
   val io = IO(new Bundle {
     val imem = new ImemPortIo()
     val dmem = new DmemPortIo()
@@ -33,7 +33,7 @@ class Memory extends Module {
   // size is 8bits because PC is counted up by 4bytes.
   val mem = Mem(0x4000, UInt(8.W))
 
-  loadMemoryFromFile(mem, sys.env("MEMORY_HEX_FILE_PATH"))
+  loadMemoryFromFile(mem, hexMemoryPath)
 
   io.imem.inst := Cat(
     mem(io.imem.addr + 3.U(WORD_LEN.W)),
