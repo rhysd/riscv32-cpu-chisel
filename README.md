@@ -7,13 +7,14 @@ hardware with Chisel and what RISC-V architecture is. Working in progress.
 
 ## References
 
-- RISC-VとChiselで学ぶ はじめてのCPU自作 (Introduction to making your own CPU with RISC-V and Chisel): https://gihyo.jp/book/2021/978-4-297-12305-5
+- RISC-VとChiselで学ぶ はじめてのCPU自作: https://gihyo.jp/book/2021/978-4-297-12305-5
+  -  'Introduction to making your own CPU with RISC-V and Chisel' Japanese book
 - Chisel API Document: https://www.chisel-lang.org/api/latest/chisel3/index.html
 - RISC-V Spec: https://riscv.org/technical/specifications/
   - https://github.com/riscv/riscv-isa-manual/releases/download/Ratified-IMAFDQC/riscv-spec-20191213.pdf
 - Assembly Manual: https://github.com/riscv/riscv-asm-manual/blob/master/riscv-asm.md
 - Reference simulator: https://github.com/riscv/riscv-isa-sim
-- Proxy kernel: https://github.com/riscv/riscv-pk
+  - Proxy kernel: https://github.com/riscv/riscv-pk
 
 This repository was imported from [chisel-template@f5f33c6](https://github.com/freechipsproject/chisel-template/tree/f5f33c69f04a64531cbdb31581e09b95583fba91).
 
@@ -42,8 +43,8 @@ docker run -it -v $(pwd):/app riscv/mycpu
 Verilog sources can be generated from Chisel sources via `sbt run`:
 
 ```sh
-make ./src/c/ctest.hex # Make hex dump of memory image of program to run
-make verilog MEMORY_HEX_FILE_PATH=./src/c/ctest.hex # Generate Verilog sources
+make ./c/fib.hex # Make hex dump of memory image of program to run
+make verilog MEMORY_HEX_FILE_PATH=./c/fib.hex # Generate Verilog sources
 cat ./verilog/Top.v
 ```
 
@@ -67,7 +68,7 @@ make ./riscv-tests-results/rv32ui-p-addi.out
 
 ### C tests
 
-To run all tests with C sources in [`src/c`](./src/c/):
+To run all tests with C sources in [`c/` directory](./c/):
 
 ```sh
 make c-tests
@@ -75,10 +76,10 @@ make c-tests
 
 Outputs of tests are stored in `c-tests-results` directory.
 
-To run a specific test case in riscv-tests (when running [`ctest.c`](./src/c/ctest.c) test case):
+To run a specific test case in riscv-tests (when running [`fib.c`](./c/fib.c) test case):
 
 ```sh
-make ./c-tests-results/ctest.out
+make ./c-tests-results/fib.out
 ```
 
 ### Run tests with the uploaded Docker image
@@ -97,4 +98,4 @@ Distributed under [the MIT license](./LICENSE.txt).
 [ci]: https://github.com/rhysd/riscv32-cpu-chisel/actions/workflows/ci.yaml
 [riscv]: https://riscv.org/
 [chisel]: https://www.chisel-lang.org/
-[docker]: https://hub.docker.com/repository/docker/rhysd/riscv-cpu-chisel
+[docker]: https://hub.docker.com/r/rhysd/riscv-cpu-chisel
