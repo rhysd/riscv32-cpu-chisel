@@ -6,6 +6,7 @@ RISCV_HEX := $(patsubst %,riscv-tests-results/%.hex,$(notdir $(RISCV_ELF)))
 RISCV_OUT := $(patsubst %.hex,%.out,$(RISCV_HEX))
 C_HEX := $(patsubst %.c,%.hex,$(wildcard c/*.c)) $(patsubst %.s,%.hex,$(filter-out c/crt0.s,$(wildcard c/*.s)))
 C_OUT := $(patsubst %.hex,c-tests-results/%.out,$(notdir $(C_HEX)))
+RUST_HEX := rust/fib.hex
 
 SRC := $(wildcard src/main/scala/*.scala)
 VERILOG_SRC := verilog/Top.v verilog/Top.Memory.mem.v
@@ -52,8 +53,15 @@ c-tests-results/%.out: c/%.hex $(SRC) src/test/scala/CTests.scala
 
 c-tests: $(C_OUT)
 
+rust/fib.elf:
+	cd ./rust && cargo build
+	cp ./rust/target/riscv32i-unknown-none-elf/debug/fib ./rust/fib.elf
+
+rust-tests-results/%.out: rust/%.hex $(SRC) src/test/scala/RustTests.scala
+	sbt "testOnly cpu.RustTests -- -z $<" | tee "$@"
+
 # Use `cat` not to connect output to tty. This prevents sbt shows prompt line on each stdout output line on CI.
-ci: $(RISCV_HEX) $(C_HEX)
+ci: $(RISCV_HEX) $(C_HEX) $(RUST_HEX)
 	sbt test | cat
 
 $(VERILOG_SRC): $(SRC)
@@ -65,6 +73,9 @@ clean:
 	rm -f ./riscv-tests-results/*.out ./riscv-tests-results/*.hex ./riscv-tests-results/*.bin
 	rm -f ./c/*.elf ./c/*.hex ./c/*.dump
 	rm -f ./c-tests-results/*.out
+	rm -f ./rust/*.elf ./rust/*.dump ./rust/*.hex
+	rm -rf ./rust/target
+	rm -f ./rust-tests-results/*.out
 	rm -f ./verilog/*.v ./verilog/*.json ./verilog/*.f ./verilog/*.fir
 
 .PHONY: clean riscv-tests c-tests verilog ci

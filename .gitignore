@@ -345,5 +345,8 @@ hs_err_pid*
 /c/*.o
 /c/*.elf
 /c/*.dump
+/rust/*.elf
+/rust/*.dump
+/rust-tests-results/*.out
 /verilog/*
 /verilog/!.gitkeep

@@ -8,6 +8,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: recursive
+      # Note: -i is necessary for bash to load ~/.bashrc
       - name: Run riscv-tests and c-tests on Docker
         run:
-          docker run --rm -v "$(pwd):/app" --workdir /app -t rhysd/riscv-cpu-chisel:latest make ci
+          docker run --rm -v "$(pwd):/app" --workdir /app -t rhysd/riscv-cpu-chisel:latest bash -i -c 'make ci'
