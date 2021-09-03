@@ -494,5 +494,9 @@ class Core extends Module {
   io.pc := execute.reg_pc
 
   printf(p"dmem: addr=${io.dmem.addr} wen=${io.dmem.wen} wdata=0x${Hexadecimal(io.dmem.wdata)}\n") // memory address loaded by LW
+
+  when(io.exit) {
+    printf(p"returned from main with ${regfile(10)}\n") // x10 = a0 = return value or function argument 0
+  }
   printf("----------------\n")
 }
