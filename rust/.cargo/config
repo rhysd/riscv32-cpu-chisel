@@ -1,0 +1,10 @@
+[build]
+target = "riscv32i-unknown-none-elf"
+
+[target.riscv32i-unknown-none-elf]
+rustflags = [
+    "-C", "debuginfo=0",
+    "-C", "opt-level=2",
+    "-C", "linker=riscv64-unknown-elf-ld",
+    "-C", "link-args=-b elf32-littleriscv -T ../c/link.ld ../c/crt0.o"
+]
