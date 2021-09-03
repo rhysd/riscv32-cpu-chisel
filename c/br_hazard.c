@@ -1,7 +1,7 @@
 int main() {
     asm volatile("addi a0, x0, 1");
     asm volatile("addi a1, x0, 2");
-    asm volatile("jal ra, jump");
+    asm volatile("jal x0, jump");
 
     // These instructions should not be executed
     asm volatile("addi a0, x0, 2");
@@ -20,7 +20,5 @@ int main() {
     asm volatile("nop");
     asm volatile("nop");
 
-    // Restore return address
-    asm volatile("li ra, 4");
     return 0;
 }
