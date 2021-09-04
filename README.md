@@ -76,10 +76,26 @@ make c-tests
 
 Outputs of tests are stored in `c-tests-results` directory.
 
-To run a specific test case in riscv-tests (when running [`fib.c`](./c/fib.c) test case):
+To run a specific test case in c-tests (when running [`fib.c`](./c/fib.c) test case):
 
 ```sh
 make ./c-tests-results/fib.out
+```
+
+### Rust tests
+
+To run all tests with Rust sources in [`rust/` directory](./rust/):
+
+```sh
+make rust-tests
+```
+
+Outputs of tests are stored in `rust-tests-results` directory.
+
+To run a specific test case in rust-tests (when running [`fib`](./rust/src/fib) test case):
+
+```sh
+make ./rust-tests-results/fib.out
 ```
 
 ### Run tests with the uploaded Docker image
