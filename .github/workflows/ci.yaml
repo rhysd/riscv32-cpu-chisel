@@ -11,3 +11,12 @@ jobs:
       - name: Run riscv-tests and c-tests on Docker
         run:
           docker run --rm -v "$(pwd):/app" --workdir /app -t rhysd/riscv-cpu-chisel:latest make ci
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Check workflow files
+        run: |
+          bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+          ./actionlint -color
+        shell: bash
