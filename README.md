@@ -15,6 +15,10 @@ hardware with Chisel and what RISC-V architecture is. Working in progress.
 - Assembly Manual: https://github.com/riscv/riscv-asm-manual/blob/master/riscv-asm.md
 - Reference simulator: https://github.com/riscv/riscv-isa-sim
   - Proxy kernel: https://github.com/riscv/riscv-pk
+- "V" vector extension: https://github.com/riscv/riscv-v-spec
+  - https://github.com/riscv/riscv-v-spec/releases/download/v1.0-rc1/riscv-v-spec-1.0-rc1.pdf
+- GNU toolchain: https://github.com/riscv/riscv-gnu-toolchain
+  - **TODO:** This repository currently refers to `rvv-0.9.x` branch but it should refer to `rvv-intrinsic` branch for RVV v1.0-rc.
 
 This repository was imported from [chisel-template@f5f33c6](https://github.com/freechipsproject/chisel-template/tree/f5f33c69f04a64531cbdb31581e09b95583fba91).
 

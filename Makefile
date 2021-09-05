@@ -33,13 +33,13 @@ riscv-tests-results/%.out: riscv-tests-results/%.hex $(SRC) src/test/scala/Riscv
 riscv-tests: $(RISCV_OUT)
 
 c/%.o: c/%.s
-	riscv64-unknown-elf-gcc -march=rv32i -mabi=ilp32 -c -o $@ $<
+	riscv64-unknown-elf-gcc -O2 -march=rv32iv -mabi=ilp32 -c -o $@ $<
 
 c/%.o: c/%.c
-	riscv64-unknown-elf-gcc -march=rv32i -mabi=ilp32 -c -o $@ $<
+	riscv64-unknown-elf-gcc -O2 -march=rv32iv -mabi=ilp32 -c -o $@ $<
 
 c/%.s: c/%.c
-	riscv64-unknown-elf-gcc -march=rv32i -mabi=ilp32 -S -o $@ $<
+	riscv64-unknown-elf-gcc -O2 -march=rv32iv -mabi=ilp32 -S -o $@ $<
 
 c/%.elf: c/%.o c/crt0.o c/link.ld
 	riscv64-unknown-elf-ld -b elf32-littleriscv $< -T ./c/link.ld -o $@ ./c/crt0.o
