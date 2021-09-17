@@ -219,50 +219,51 @@ class DecodeStage {
       List(ALU_NONE, OP1_RS1, OP2_RS2, MEN_NONE, REN_NONE, WB_NONE, CSR_NONE),
       Array(
         // 2.6 Load and Store Instructions
-        LW      -> List(ALU_ADD,  OP1_RS1,  OP2_IMI,  MEN_NONE,   REN_SCALAR, WB_MEM,  CSR_NONE), // x[rs1] + sext(imm_i)
-        SW      -> List(ALU_ADD,  OP1_RS1,  OP2_IMS,  MEN_SCALAR, REN_NONE,   WB_NONE, CSR_NONE), // x[rs1] + sext(imm_s)
+        LW      -> List(ALU_ADD,  OP1_RS1,  OP2_IMI,  MEN_NONE,   REN_SCALAR, WB_MEM,   CSR_NONE), // x[rs1] + sext(imm_i)
+        SW      -> List(ALU_ADD,  OP1_RS1,  OP2_IMS,  MEN_SCALAR, REN_NONE,   WB_NONE,  CSR_NONE), // x[rs1] + sext(imm_s)
         // 2.4 Integer Computational Instructions
-        ADD     -> List(ALU_ADD,  OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // x[rs1] + x[rs2]
-        ADDI    -> List(ALU_ADD,  OP1_RS1,  OP2_IMI,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // x[rs1] + sext(imm_i)
-        SUB     -> List(ALU_SUB,  OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // x[rs1] - x[rs2]
-        AND     -> List(ALU_AND,  OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // x[rs1] & x[rs2]
-        OR      -> List(ALU_OR,   OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // x[rs1] | x[rs2]
-        XOR     -> List(ALU_XOR,  OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // x[rs1] ^ x[rs2]
-        ANDI    -> List(ALU_AND,  OP1_RS1,  OP2_IMI,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // x[rs1] & sext(imm_i)
-        ORI     -> List(ALU_OR ,  OP1_RS1,  OP2_IMI,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // x[rs1] | sext(imm_i)
-        XORI    -> List(ALU_XOR,  OP1_RS1,  OP2_IMI,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // x[rs1] ^ sext(imm_i)
-        SLL     -> List(ALU_SLL,  OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // x[rs1] << x[rs2](4,0)
-        SRL     -> List(ALU_SRL,  OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // x[rs1] >>u x[rs2](4,0)
-        SRA     -> List(ALU_SRA,  OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // x[rs1] >>s x[rs2](4,0)
-        SLLI    -> List(ALU_SLL,  OP1_RS1,  OP2_IMI,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // x[rs1] << imm_i_sext(4,0)
-        SRLI    -> List(ALU_SRL,  OP1_RS1,  OP2_IMI,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // x[rs1] >>u imm_i_sext(4,0)
-        SRAI    -> List(ALU_SRA,  OP1_RS1,  OP2_IMI,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // x[rs1] >>s imm_i_sext(4,0)
-        SLT     -> List(ALU_SLT,  OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // x[rs1] <s x[rs2]
-        SLTU    -> List(ALU_SLTU, OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // x[rs1] <u x[rs2]
-        SLTI    -> List(ALU_SLT,  OP1_RS1,  OP2_IMI,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // x[rs1] <s imm_i_sext
-        SLTIU   -> List(ALU_SLTU, OP1_RS1,  OP2_IMI,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // x[rs1] <u imm_i_sext
-        LUI     -> List(ALU_ADD,  OP1_NONE, OP2_IMU,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // sext(imm_u[31:12] << 12)
-        AUIPC   -> List(ALU_ADD,  OP1_PC,   OP2_IMU,  MEN_NONE,   REN_SCALAR, WB_ALU,  CSR_NONE), // PC + sext(imm_u[31:12] << 12)
+        ADD     -> List(ALU_ADD,  OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_SCALAR, WB_ALU,   CSR_NONE), // x[rs1] + x[rs2]
+        ADDI    -> List(ALU_ADD,  OP1_RS1,  OP2_IMI,  MEN_NONE,   REN_SCALAR, WB_ALU,   CSR_NONE), // x[rs1] + sext(imm_i)
+        SUB     -> List(ALU_SUB,  OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_SCALAR, WB_ALU,   CSR_NONE), // x[rs1] - x[rs2]
+        AND     -> List(ALU_AND,  OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_SCALAR, WB_ALU,   CSR_NONE), // x[rs1] & x[rs2]
+        OR      -> List(ALU_OR,   OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_SCALAR, WB_ALU,   CSR_NONE), // x[rs1] | x[rs2]
+        XOR     -> List(ALU_XOR,  OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_SCALAR, WB_ALU,   CSR_NONE), // x[rs1] ^ x[rs2]
+        ANDI    -> List(ALU_AND,  OP1_RS1,  OP2_IMI,  MEN_NONE,   REN_SCALAR, WB_ALU,   CSR_NONE), // x[rs1] & sext(imm_i)
+        ORI     -> List(ALU_OR ,  OP1_RS1,  OP2_IMI,  MEN_NONE,   REN_SCALAR, WB_ALU,   CSR_NONE), // x[rs1] | sext(imm_i)
+        XORI    -> List(ALU_XOR,  OP1_RS1,  OP2_IMI,  MEN_NONE,   REN_SCALAR, WB_ALU,   CSR_NONE), // x[rs1] ^ sext(imm_i)
+        SLL     -> List(ALU_SLL,  OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_SCALAR, WB_ALU,   CSR_NONE), // x[rs1] << x[rs2](4,0)
+        SRL     -> List(ALU_SRL,  OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_SCALAR, WB_ALU,   CSR_NONE), // x[rs1] >>u x[rs2](4,0)
+        SRA     -> List(ALU_SRA,  OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_SCALAR, WB_ALU,   CSR_NONE), // x[rs1] >>s x[rs2](4,0)
+        SLLI    -> List(ALU_SLL,  OP1_RS1,  OP2_IMI,  MEN_NONE,   REN_SCALAR, WB_ALU,   CSR_NONE), // x[rs1] << imm_i_sext(4,0)
+        SRLI    -> List(ALU_SRL,  OP1_RS1,  OP2_IMI,  MEN_NONE,   REN_SCALAR, WB_ALU,   CSR_NONE), // x[rs1] >>u imm_i_sext(4,0)
+        SRAI    -> List(ALU_SRA,  OP1_RS1,  OP2_IMI,  MEN_NONE,   REN_SCALAR, WB_ALU,   CSR_NONE), // x[rs1] >>s imm_i_sext(4,0)
+        SLT     -> List(ALU_SLT,  OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_SCALAR, WB_ALU,   CSR_NONE), // x[rs1] <s x[rs2]
+        SLTU    -> List(ALU_SLTU, OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_SCALAR, WB_ALU,   CSR_NONE), // x[rs1] <u x[rs2]
+        SLTI    -> List(ALU_SLT,  OP1_RS1,  OP2_IMI,  MEN_NONE,   REN_SCALAR, WB_ALU,   CSR_NONE), // x[rs1] <s imm_i_sext
+        SLTIU   -> List(ALU_SLTU, OP1_RS1,  OP2_IMI,  MEN_NONE,   REN_SCALAR, WB_ALU,   CSR_NONE), // x[rs1] <u imm_i_sext
+        LUI     -> List(ALU_ADD,  OP1_NONE, OP2_IMU,  MEN_NONE,   REN_SCALAR, WB_ALU,   CSR_NONE), // sext(imm_u[31:12] << 12)
+        AUIPC   -> List(ALU_ADD,  OP1_PC,   OP2_IMU,  MEN_NONE,   REN_SCALAR, WB_ALU,   CSR_NONE), // PC + sext(imm_u[31:12] << 12)
         // 2.5 Control Transfer Instructions
-        BEQ     -> List(BR_BEQ,   OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_NONE,   WB_NONE, CSR_NONE), // x[rs1] === x[rs2] then PC+sext(imm_b)
-        BNE     -> List(BR_BNE,   OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_NONE,   WB_NONE, CSR_NONE), // x[rs1] =/= x[rs2] then PC+sext(imm_b)
-        BGE     -> List(BR_BGE,   OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_NONE,   WB_NONE, CSR_NONE), // x[rs1] >=s x[rs2] then PC+sext(imm_b)
-        BGEU    -> List(BR_BGEU,  OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_NONE,   WB_NONE, CSR_NONE), // x[rs1] >=u x[rs2] then PC+sext(imm_b)
-        BLT     -> List(BR_BLT,   OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_NONE,   WB_NONE, CSR_NONE), // x[rs1] <s x[rs2]  then PC+sext(imm_b)
-        BLTU    -> List(BR_BLTU,  OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_NONE,   WB_NONE, CSR_NONE), // x[rs1] <u x[rs2]  then PC+sext(imm_b)
-        JAL     -> List(ALU_ADD,  OP1_PC,   OP2_IMJ,  MEN_NONE,   REN_SCALAR, WB_PC,   CSR_NONE), // x[rd] <- PC+4 and PC+sext(imm_j)
-        JALR    -> List(ALU_JALR, OP1_RS1,  OP2_IMI,  MEN_NONE,   REN_SCALAR, WB_PC,   CSR_NONE), // x[rd] <- PC+4 and (x[rs1]+sext(imm_i))&~1
+        BEQ     -> List(BR_BEQ,   OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_NONE,   WB_NONE,  CSR_NONE), // x[rs1] === x[rs2] then PC+sext(imm_b)
+        BNE     -> List(BR_BNE,   OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_NONE,   WB_NONE,  CSR_NONE), // x[rs1] =/= x[rs2] then PC+sext(imm_b)
+        BGE     -> List(BR_BGE,   OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_NONE,   WB_NONE,  CSR_NONE), // x[rs1] >=s x[rs2] then PC+sext(imm_b)
+        BGEU    -> List(BR_BGEU,  OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_NONE,   WB_NONE,  CSR_NONE), // x[rs1] >=u x[rs2] then PC+sext(imm_b)
+        BLT     -> List(BR_BLT,   OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_NONE,   WB_NONE,  CSR_NONE), // x[rs1] <s x[rs2]  then PC+sext(imm_b)
+        BLTU    -> List(BR_BLTU,  OP1_RS1,  OP2_RS2,  MEN_NONE,   REN_NONE,   WB_NONE,  CSR_NONE), // x[rs1] <u x[rs2]  then PC+sext(imm_b)
+        JAL     -> List(ALU_ADD,  OP1_PC,   OP2_IMJ,  MEN_NONE,   REN_SCALAR, WB_PC,    CSR_NONE), // x[rd] <- PC+4 and PC+sext(imm_j)
+        JALR    -> List(ALU_JALR, OP1_RS1,  OP2_IMI,  MEN_NONE,   REN_SCALAR, WB_PC,    CSR_NONE), // x[rd] <- PC+4 and (x[rs1]+sext(imm_i))&~1
         // 9.1 "Zicsr", Control and Status Register (CSR) Instructions
-        CSRRW   -> List(ALU_RS1,  OP1_RS1,  OP2_NONE, MEN_NONE,   REN_SCALAR, WB_CSR,  CSR_W), // CSRs[csr] <- x[rs1]
-        CSRRWI  -> List(ALU_RS1,  OP1_IMZ,  OP2_NONE, MEN_NONE,   REN_SCALAR, WB_CSR,  CSR_W), // CSRs[csr] <- uext(imm_z)
-        CSRRS   -> List(ALU_RS1,  OP1_RS1,  OP2_NONE, MEN_NONE,   REN_SCALAR, WB_CSR,  CSR_S), // CSRs[csr] <- CSRs[csr] | x[rs1]
-        CSRRSI  -> List(ALU_RS1,  OP1_IMZ,  OP2_NONE, MEN_NONE,   REN_SCALAR, WB_CSR,  CSR_S), // CSRs[csr] <- CSRs[csr] | uext(imm_z)
-        CSRRC   -> List(ALU_RS1,  OP1_RS1,  OP2_NONE, MEN_NONE,   REN_SCALAR, WB_CSR,  CSR_C), // CSRs[csr] <- CSRs[csr]&~x[rs1]
-        CSRRCI  -> List(ALU_RS1,  OP1_IMZ,  OP2_NONE, MEN_NONE,   REN_SCALAR, WB_CSR,  CSR_C), // CSRs[csr] <- CSRs[csr]&~uext(imm_z)
+        CSRRW   -> List(ALU_RS1,  OP1_RS1,  OP2_NONE, MEN_NONE,   REN_SCALAR, WB_CSR,   CSR_W), // CSRs[csr] <- x[rs1]
+        CSRRWI  -> List(ALU_RS1,  OP1_IMZ,  OP2_NONE, MEN_NONE,   REN_SCALAR, WB_CSR,   CSR_W), // CSRs[csr] <- uext(imm_z)
+        CSRRS   -> List(ALU_RS1,  OP1_RS1,  OP2_NONE, MEN_NONE,   REN_SCALAR, WB_CSR,   CSR_S), // CSRs[csr] <- CSRs[csr] | x[rs1]
+        CSRRSI  -> List(ALU_RS1,  OP1_IMZ,  OP2_NONE, MEN_NONE,   REN_SCALAR, WB_CSR,   CSR_S), // CSRs[csr] <- CSRs[csr] | uext(imm_z)
+        CSRRC   -> List(ALU_RS1,  OP1_RS1,  OP2_NONE, MEN_NONE,   REN_SCALAR, WB_CSR,   CSR_C), // CSRs[csr] <- CSRs[csr]&~x[rs1]
+        CSRRCI  -> List(ALU_RS1,  OP1_IMZ,  OP2_NONE, MEN_NONE,   REN_SCALAR, WB_CSR,   CSR_C), // CSRs[csr] <- CSRs[csr]&~uext(imm_z)
         // 2.8 Environment Call and Breakpoints
-        ECALL   -> List(ALU_NONE, OP1_NONE, OP2_NONE, MEN_NONE,   REN_NONE,   WB_NONE, CSR_E),
+        ECALL   -> List(ALU_NONE, OP1_NONE, OP2_NONE, MEN_NONE,   REN_NONE,   WB_NONE,  CSR_E),
         // "V" Vector Extension
-        VSETVLI -> List(ALU_NONE, OP1_NONE, OP2_NONE, MEN_NONE,   REN_SCALAR, WB_VL,   CSR_V),
+        VSETVLI -> List(ALU_NONE, OP1_NONE, OP2_NONE, MEN_NONE,   REN_SCALAR, WB_VL,    CSR_V),
+        VLE     -> List(ALU_RS1,  OP1_RS1,  OP2_NONE, MEN_NONE,   REN_VECTOR, WB_MEM_V, CSR_NONE),
       ),
     )
 
@@ -486,9 +487,35 @@ class MemStage {
 
 // WB
 class WriteBackStage {
-  def connect(prev: MemStage, gr: Mem[UInt]) = {
+  def connectVle(prev: MemStage, vr: Mem[UInt]) = {
+    // "V" 7.1: Vector Load Instruction Encoding
+    //
+    //  31 29  28 27 26 25 24   20 19   15 14  12 11   7 6     0
+    // ┌─────┬───┬─────┬──┬───────┬───────┬──────┬──────┬───────┐
+    // │ nf  │mew│ mop │vm│ lumop │  rs1  │width │  vd  │0000111│ VL*
+    // └─────┴───┴─────┴──┴───────┴───────┴──────┴──────┴───────┘
+    // unit-stride -> vd: destination of load, rs1: base address
+    //
+    //  31 29  28 27 26 25 24   20 19   15 14  12 11   7 6     0
+    // ┌─────┬───┬─────┬──┬───────┬───────┬──────┬──────┬───────┐
+    // │ nf  │mew│ mop │vm│  rs2  │  rs1  │width │  vd  │0000111│ VLS*
+    // └─────┴───┴─────┴──┴───────┴───────┴──────┴──────┴───────┘
+    // strided -> vd: destination of load, rs1: base address, rs2: stride
+    //
+    //  31 29  28 27 26 25 24   20 19   15 14  12 11   7 6     0
+    // ┌─────┬───┬─────┬──┬───────┬───────┬──────┬──────┬───────┐
+    // │ nf  │mew│ mop │vm│  vs2  │  rs1  │width │  vd  │0000111│ VLX*
+    // └─────┴───┴─────┴──┴───────┴───────┴──────┴──────┴───────┘
+    // indexed -> vd: destination of load, rs1: base address, vs2: address offsets
+
+    // TODO
+  }
+
+  def connect(prev: MemStage, gr: Mem[UInt], vr: Mem[UInt]) = {
     when(prev.reg_rf_wen === REN_SCALAR) {
       gr(prev.reg_wb_addr) := prev.reg_wb_data // Write back to the register specified by rd
+    }.elsewhen(prev.reg_rf_wen === REN_VECTOR) {
+      connectVle(prev, vr)
     }
 
     printf(p"WB: wb_data=0x${Hexadecimal(prev.reg_wb_data)}\n")
@@ -511,6 +538,8 @@ class Core extends Module {
   val regfile = Mem(32, UInt(WORD_LEN.W))
   // Control and Status Registers
   val csr_regfile = Mem(4096, UInt(WORD_LEN.W))
+  // 128bit Vector Registers
+  val vec_regfile = Mem(32, UInt(VLEN.W))
 
   val fetch = new FetchStage()
   val decode = new DecodeStage()
@@ -522,7 +551,7 @@ class Core extends Module {
   decode.connect(fetch, execute, mem, regfile)
   execute.connect(decode)
   mem.connect(io.dmem, execute, decode, csr_regfile)
-  wb.connect(mem, regfile)
+  wb.connect(mem, regfile, vec_regfile)
 
   // We can know that a program is exiting when it is jumping to the current address. This never
   // happens in C source since C does not allow an infinite loop without any side effect. The
