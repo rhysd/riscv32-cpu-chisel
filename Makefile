@@ -1,3 +1,7 @@
+# Use bash for -o option
+SHELL=/bin/bash
+.SHELLFLAGS = -o pipefail -c
+
 UI_INSTS := sw lw add addi sub and andi or ori xor xori sll srl sra slli srli srai slt sltu slti sltiu beq bne blt bge bltu bgeu jal jalr lui auipc
 MI_INSTS := csr scall
 
